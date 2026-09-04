@@ -1,24 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { MazeEscapeGame } from "@/components/game/MazeEscapeGame";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  // WebGL canvas must never render on the server
+  ssr: false,
+  head: () => ({
+    meta: [
+      { title: "Maze Escape — The One Way Out" },
+      {
+        name: "description",
+        content:
+          "Maze Escape is a 3D drone-view maze game. Explore a stone labyrinth, dodge fake gates and find the only real exit.",
+      },
+      { property: "og:title", content: "Maze Escape — The One Way Out" },
+      {
+        property: "og:description",
+        content: "Navigate a cinematic 3D stone labyrinth and find the one gate that opens.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: MazeEscapeGame,
 });
-
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
