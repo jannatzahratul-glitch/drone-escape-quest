@@ -72,6 +72,15 @@ export function Player({
 
   const startWorld = useMemo(() => cellToWorld(maze, maze.start.x, maze.start.y), [maze]);
 
+  // Dev-only teleport used by automated gameplay tests.
+  if (import.meta.env.DEV && typeof window !== "undefined") {
+    (window as unknown as Record<string, unknown>)["__mazeWarp"] = (x: number, y: number) => {
+      const w = cellToWorld(maze, x, y);
+      group.current?.position.set(w.x, 0, w.z);
+      currentGate.current = null;
+    };
+  }
+
   useFrame((_, rawDelta) => {
     const g = group.current;
     if (!g) return;

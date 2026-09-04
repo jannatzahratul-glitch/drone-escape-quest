@@ -35,7 +35,7 @@ const SPECS: LevelSpec[] = [
       gateCount: 2,
       deadEndDensity: 1,
       branching: 0.5,
-      routeLength: 0.95,
+      routeLength: 0.7,
       rating: 3,
     },
   },
