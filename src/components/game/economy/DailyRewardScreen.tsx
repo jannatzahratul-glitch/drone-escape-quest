@@ -29,7 +29,7 @@ export function DailyRewardScreen() {
   const claim = () => {
     const g = economy.claimDailyReward();
     if (!g.granted) return;
-    playCue("coin");
+    playCue("daily");
     vibrate([12, 30, 12]);
     setClaimed({ coins: g.coins, xp: g.xp });
   };

@@ -332,7 +332,7 @@ export function LevelMapScreen() {
                 stars={starMap[id] ?? 0}
                 best={bestMs[id]}
                 onSelect={() => {
-                  playCue("ui");
+                  playCue("level-select");
                   setSelected(id);
                 }}
               />

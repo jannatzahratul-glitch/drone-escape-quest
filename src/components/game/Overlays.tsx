@@ -3,6 +3,8 @@ import { bestTime, useProgress } from "@/game/save/SaveManager";
 import { actions, formatTime, useGame } from "@/game/state/gameStore";
 import { STAR_LABEL } from "@/game/progression/scoring";
 import { useEffect, useState } from "react";
+import { playCue } from "@/game/audio/AudioManager";
+import { haptics } from "@/game/haptics/HapticManager";
 import { MenuButton, Panel, Screen } from "./ui";
 import { CoinChip, XpBar } from "./economy/Wallet";
 import { RewardBreakdown } from "./economy/RewardBreakdown";
@@ -73,12 +75,22 @@ export function LevelCompleteScreen() {
   const unlockedFlash = useGame((s) => s.unlockedFlash);
   const [showRewards, setShowRewards] = useState(false);
   useEffect(() => {
+    playCue("complete");
+    haptics.success();
+  }, []);
+  useEffect(() => {
     const id = window.setTimeout(() => setShowRewards(true), levelUp ? 2300 : 400);
     return () => window.clearTimeout(id);
   }, [levelUp]);
   useProgress((p) => p.bestMs[level]);
   const best = bestTime(level) ?? finalMs;
   const stars = result?.stars ?? 1;
+  useEffect(() => {
+    const ids = Array.from({ length: stars }, (_, i) =>
+      window.setTimeout(() => playCue("star"), 500 + i * 260),
+    );
+    return () => ids.forEach(window.clearTimeout);
+  }, [stars]);
 
   const Stat = ({ label, value }: { label: string; value: string }) => (
     <div className="rounded-2xl border border-border/50 bg-background/30 px-2 py-3">
@@ -144,6 +156,7 @@ export function LevelCompleteScreen() {
           </div>
         </div>
 
+        {unlockedFlash !== null && <UnlockCue />}
         {unlockedFlash !== null && (
           <div className="animate-in fade-in zoom-in-95 mt-4 rounded-2xl border border-[#c9a24a]/50 bg-[#c9a24a]/10 p-4">
             <p className="flex items-center justify-center gap-2 font-display text-xs tracking-[0.28em] text-[#e8cd8a]">
@@ -187,4 +200,13 @@ export function EscapingOverlay() {
       </p>
     </div>
   );
+}
+
+/** plays the "level unlocked" cue exactly once when the banner appears */
+function UnlockCue() {
+  useEffect(() => {
+    playCue("unlock");
+    haptics.medium();
+  }, []);
+  return null;
 }

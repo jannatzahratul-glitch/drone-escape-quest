@@ -10,6 +10,7 @@ import { ECONOMY } from "../economy/config";
 import { grantCompletion, type CompletionRewards } from "../economy/levelRewards";
 import { isCompleted } from "../save/SaveManager";
 import { markSafePoint } from "../rewards/revive";
+import { getSettings } from "../settings/SettingsManager";
 
 /**
  * Modular game-state manager.
@@ -243,7 +244,7 @@ export const actions = {
   setNearGate(id: number | null) {
     if (state.nearGate === id) return;
     const patch: Partial<GameState> = { nearGate: id };
-    if (id !== null && !state.taught.includes("gate")) {
+    if (id !== null && !state.taught.includes("gate") && getSettings().hintPrompts) {
       patch.taught = [...state.taught, "gate"];
       patch.notice = { text: "Not every gate leads outside.", at: Date.now(), tone: "info" };
     }
