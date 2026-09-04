@@ -8,6 +8,8 @@ import { MenuButton, Panel, Screen } from "./ui";
 import { CoinChip, XpBar } from "./economy/Wallet";
 import { RewardBreakdown } from "./economy/RewardBreakdown";
 import { LevelUpBurst } from "./economy/LevelUpBurst";
+import { TOTAL_LEVELS } from "@/game/levels/levels";
+import { Unlock } from "lucide-react";
 
 export function StartScreen() {
   const unlocked = useProgress((p) => p.unlocked);
@@ -29,7 +31,7 @@ export function StartScreen() {
         <div className="mt-7 space-y-3">
           <MenuButton onClick={() => actions.startLevel(Math.max(1, unlocked))}>PLAY</MenuButton>
           <MenuButton variant="ghost" onClick={actions.showLevels}>
-            LEVELS
+            LEVEL MAP
           </MenuButton>
           <MenuButton variant="ghost" onClick={actions.showDaily}>
             <span className="flex items-center justify-center gap-2">
@@ -64,7 +66,7 @@ export function PauseScreen() {
             RESTART LEVEL
           </MenuButton>
           <MenuButton variant="ghost" onClick={actions.showLevels}>
-            LEVEL SELECT
+            LEVEL MAP
           </MenuButton>
           <MenuButton variant="ghost" onClick={actions.mainMenu}>
             MAIN MENU
@@ -82,6 +84,7 @@ export function LevelCompleteScreen() {
   const result = useGame((s) => s.result);
   const rewards = useGame((s) => s.rewards);
   const levelUp = useGame((s) => s.levelUp);
+  const unlockedFlash = useGame((s) => s.unlockedFlash);
   const [showRewards, setShowRewards] = useState(false);
   useEffect(() => {
     const id = window.setTimeout(() => setShowRewards(true), levelUp ? 2300 : 400);
@@ -155,17 +158,33 @@ export function LevelCompleteScreen() {
           </div>
         </div>
 
+        {unlockedFlash !== null && (
+          <div className="animate-in fade-in zoom-in-95 mt-4 rounded-2xl border border-[#c9a24a]/50 bg-[#c9a24a]/10 p-4">
+            <p className="flex items-center justify-center gap-2 font-display text-xs tracking-[0.28em] text-[#e8cd8a]">
+              <Unlock className="size-4" /> LEVEL {unlockedFlash} UNLOCKED
+            </p>
+            <button
+              onClick={actions.clearUnlockedFlash}
+              className="mt-3 w-full rounded-xl border border-[#c9a24a]/40 py-2 text-[0.6rem] tracking-[0.3em] text-[#e8cd8a] active:scale-[0.97]"
+            >
+              CONTINUE
+            </button>
+          </div>
+        )}
+
         {isNewBest && (
           <p className="mt-3 text-[0.6rem] tracking-[0.3em] text-primary">NEW RECORD</p>
         )}
 
         <div className="mt-7 space-y-3">
-          <MenuButton onClick={actions.nextLevel}>NEXT LEVEL</MenuButton>
+          <MenuButton onClick={actions.nextLevel}>
+            {level >= TOTAL_LEVELS ? "LEVEL MAP" : "NEXT LEVEL"}
+          </MenuButton>
           <MenuButton variant="ghost" onClick={actions.restart}>
             RETRY
           </MenuButton>
           <MenuButton variant="ghost" onClick={actions.showLevels}>
-            LEVELS
+            LEVEL MAP
           </MenuButton>
         </div>
       </Panel>

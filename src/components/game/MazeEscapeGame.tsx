@@ -9,7 +9,7 @@ import { playCue, vibrate } from "@/game/audio/AudioManager";
 import type { Gate } from "@/game/maze/generator";
 import { Hud } from "./Hud";
 import { EscapingOverlay, LevelCompleteScreen, PauseScreen, StartScreen } from "./Overlays";
-import { LevelSelectScreen } from "./LevelSelect";
+import { LevelMapScreen } from "./map/LevelMap";
 import { SettingsScreen } from "./SettingsScreen";
 import { DailyRewardScreen } from "./economy/DailyRewardScreen";
 
@@ -72,7 +72,7 @@ export function MazeEscapeGame() {
 
       {(phase === "playing" || phase === "paused" || phase === "escaping") && <Hud />}
       {phase === "menu" && <StartScreen />}
-      {phase === "levels" && <LevelSelectScreen />}
+      {phase === "levels" && <LevelMapScreen />}
       {phase === "settings" && <SettingsScreen />}
       {phase === "daily" && <DailyRewardScreen />}
       {phase === "paused" && <PauseScreen />}
