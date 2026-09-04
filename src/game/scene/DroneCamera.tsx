@@ -28,7 +28,9 @@ export function DroneCamera({ maze, target, zoom = 1, cinematic = false }: Drone
     // portrait phones need more altitude to keep the maze readable
     const portrait = size.height > size.width;
     const height = Math.max(22, span * (portrait ? 0.95 : 0.6)) * zoom;
-    return { height, back: height * 0.5, span };
+    const halfW = (maze.width * CELL_SIZE) / 2;
+    const halfH = (maze.height * CELL_SIZE) / 2;
+    return { height, back: height * 0.3, span, halfW, halfH };
   }, [maze, zoom, size.width, size.height]);
 
   useFrame((state, rawDelta) => {
@@ -36,21 +38,27 @@ export function DroneCamera({ maze, target, zoom = 1, cinematic = false }: Drone
     const t = state.clock.elapsedTime;
 
     const angle = cinematic ? t * 0.08 : 0;
+    // keep the framing inside the maze so the dark void beyond it never fills
+    // the screen
+    const marginX = Math.max(0, rig.halfW - rig.span * 0.22);
+    const marginZ = Math.max(0, rig.halfH - rig.span * 0.22);
+    const fx = THREE.MathUtils.clamp(target.x, -marginX, marginX);
+    const fz = THREE.MathUtils.clamp(target.z, -marginZ, marginZ);
     const desired = new THREE.Vector3(
-      target.x + Math.sin(angle) * rig.back,
+      fx + Math.sin(angle) * rig.back,
       rig.height,
-      target.z + Math.cos(angle) * rig.back,
+      fz + Math.cos(angle) * rig.back,
     );
 
     if (!initialised.current) {
       camera.position.copy(desired);
-      look.current.copy(target);
+      look.current.set(fx, 0, fz);
       initialised.current = true;
     } else {
       // frame-rate independent smoothing
       const k = 1 - Math.exp(-3.2 * delta);
       camera.position.lerp(desired, k);
-      look.current.lerp(target, 1 - Math.exp(-5 * delta));
+      look.current.lerp(new THREE.Vector3(fx, 0, fz), 1 - Math.exp(-5 * delta));
     }
 
     // camera always stays above the maze walls
