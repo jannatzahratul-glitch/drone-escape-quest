@@ -64,7 +64,7 @@ export function GameScene({
       style={{ touchAction: "none" }}
     >
       <color attach="background" args={["#0a0a0d"]} />
-      <fog attach="fog" args={["#0d0c10", span * 0.5, span * 1.15]} />
+      <fog attach="fog" args={["#0d0c10", span * 1.1, span * 2.4]} />
 
       <ambientLight intensity={0.85} color="#9fb0d0" />
       <hemisphereLight args={["#5d6e92", "#2c2319", 1.05]} />
