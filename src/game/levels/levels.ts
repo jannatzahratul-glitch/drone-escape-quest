@@ -34,7 +34,7 @@ const SPECS: LevelSpec[] = [
       height: 17,
       gateCount: 2,
       deadEndDensity: 0.85,
-      branching: 0.7,
+      branching: 0.5,
       routeLength: 0.95,
       rating: 3,
     },
@@ -49,13 +49,13 @@ const SPECS: LevelSpec[] = [
   {
     tier: "medium",
     subtitle: "THREE PROMISES",
-    overrides: { width: 19, height: 19, gateCount: 3, deadEndDensity: 0.75, branching: 0.6, rating: 3 },
+    overrides: { width: 19, height: 19, gateCount: 3, deadEndDensity: 0.75, branching: 0.45, rating: 3 },
   },
   // 4 — hard, misleading routes.
   {
     tier: "hard",
     subtitle: "FALSE CORRIDORS",
-    overrides: { width: 23, height: 21, gateCount: 4, deadEndDensity: 0.9, branching: 0.8, rating: 4 },
+    overrides: { width: 23, height: 21, gateCount: 4, deadEndDensity: 0.9, branching: 0.58, rating: 4 },
   },
   // 5 — medium recovery, more gates but a short route.
   {
@@ -73,7 +73,7 @@ const SPECS: LevelSpec[] = [
   {
     tier: "hard",
     subtitle: "THE LONG DARK",
-    overrides: { width: 25, height: 23, gateCount: 4, deadEndDensity: 0.95, branching: 0.85, rating: 4 },
+    overrides: { width: 25, height: 23, gateCount: 4, deadEndDensity: 0.95, branching: 0.6, rating: 4 },
   },
   // 8 — medium, moderate maze, 4 gates.
   {
@@ -91,7 +91,7 @@ const SPECS: LevelSpec[] = [
   {
     tier: "special",
     subtitle: "THE ONE WAY OUT",
-    overrides: { width: 31, height: 29, gateCount: 6, deadEndDensity: 0.94, branching: 0.9, rating: 5 },
+    overrides: { width: 31, height: 29, gateCount: 6, deadEndDensity: 0.94, branching: 0.66, rating: 5 },
   },
 ];
 
