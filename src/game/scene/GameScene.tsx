@@ -66,11 +66,11 @@ export function GameScene({
       <color attach="background" args={["#0a0a0d"]} />
       <fog attach="fog" args={["#0d0c10", span * 1.1, span * 2.4]} />
 
-      <ambientLight intensity={0.85} color="#9fb0d0" />
+      <ambientLight intensity={1.15} color="#9fb0d0" />
       <hemisphereLight args={["#5d6e92", "#2c2319", 1.05]} />
       <directionalLight
         position={[span * 0.4, span * 0.9, span * 0.35]}
-        intensity={2.1}
+        intensity={3.1}
         color="#ffe7c4"
         castShadow
         shadow-mapSize-width={1024}
