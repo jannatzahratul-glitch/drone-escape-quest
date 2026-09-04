@@ -4,13 +4,16 @@ import { useProgress } from "@/game/save/SaveManager";
 import { actions, formatTime } from "@/game/state/gameStore";
 import { playCue } from "@/game/audio/AudioManager";
 import { MenuButton, Screen } from "./ui";
+import { CoinChip } from "./economy/Wallet";
+import { useEconomy } from "@/game/economy/EconomyService";
+import { levelFromXp } from "@/game/economy/config";
 
 export function LevelSelectScreen() {
   const unlocked = useProgress((p) => p.unlocked);
   const completed = useProgress((p) => p.completed);
   const bestMs = useProgress((p) => p.bestMs);
   const stars = useProgress((p) => p.stars);
-  const xp = useProgress((p) => p.xp);
+  const xp = useEconomy((e) => e.xp);
 
   const levels = Array.from({ length: TOTAL_LEVELS }, (_, i) => i + 1);
 
@@ -20,8 +23,11 @@ export function LevelSelectScreen() {
         <div className="text-center">
           <h2 className="font-display text-2xl tracking-[0.3em]">LEVELS</h2>
           <p className="mt-2 text-[0.6rem] tracking-[0.35em] text-muted-foreground">
-            {completed.length} / {TOTAL_LEVELS} ESCAPED · {xp} XP
+            {completed.length} / {TOTAL_LEVELS} ESCAPED · PLAYER LEVEL {levelFromXp(xp).level}
           </p>
+          <div className="mt-3 flex justify-center">
+            <CoinChip compact />
+          </div>
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-3">
