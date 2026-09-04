@@ -10,6 +10,22 @@ export type DifficultyTier = "easy" | "medium" | "hard" | "very-hard" | "special
 
 export type VisualComplexity = "low" | "medium" | "high";
 
+/** How many clue stones a level places and how directly they speak. */
+export interface CluePlan {
+  count: number;
+  style: "obvious" | "simple" | "combo" | "subtle";
+}
+
+/** Configurable consequences for entering a fake gate. Kept gentle for now. */
+export interface PenaltyConfig {
+  /** milliseconds added to the run clock */
+  timeMs: number;
+  /** score points removed */
+  score: number;
+  /** brief screen darkening after a wrong gate */
+  darkness: boolean;
+}
+
 export interface DifficultyParams {
   /** maze cells across (forced odd by the generator) */
   width: number;
@@ -29,6 +45,16 @@ export interface DifficultyParams {
   timeLimitSec: number | null;
   /** whether clue props may be placed near the correct route */
   cluesEnabled: boolean;
+  /** clue stones placed in the maze */
+  cluePlan: CluePlan;
+  /** free hints available in the level */
+  hintLimit: number;
+  /** 0..1 — how tightly the fog closes in (fog of war strength) */
+  fogStrength: number;
+  /** consequence of entering a fake gate */
+  penalty: PenaltyConfig;
+  /** seconds under which the run still earns 3 / 2 stars */
+  starTimeSec: [number, number];
   /** 1..5 — shown in the UI */
   rating: number;
   tier: DifficultyTier;
@@ -46,6 +72,11 @@ export const DIFFICULTY_PRESETS: Record<DifficultyTier, DifficultyParams> = {
     visualComplexity: "high",
     timeLimitSec: null,
     cluesEnabled: true,
+    cluePlan: { count: 1, style: "simple" },
+    hintLimit: 3,
+    fogStrength: 0.15,
+    penalty: { timeMs: 0, score: 0, darkness: false },
+    starTimeSec: [60, 120],
     rating: 1,
     tier: "easy",
   },
@@ -59,6 +90,11 @@ export const DIFFICULTY_PRESETS: Record<DifficultyTier, DifficultyParams> = {
     visualComplexity: "high",
     timeLimitSec: null,
     cluesEnabled: true,
+    cluePlan: { count: 2, style: "obvious" },
+    hintLimit: 2,
+    fogStrength: 0.3,
+    penalty: { timeMs: 0, score: 25, darkness: false },
+    starTimeSec: [100, 190],
     rating: 3,
     tier: "medium",
   },
@@ -71,7 +107,12 @@ export const DIFFICULTY_PRESETS: Record<DifficultyTier, DifficultyParams> = {
     gateCount: 4,
     visualComplexity: "medium",
     timeLimitSec: null,
-    cluesEnabled: false,
+    cluesEnabled: true,
+    cluePlan: { count: 3, style: "combo" },
+    hintLimit: 1,
+    fogStrength: 0.45,
+    penalty: { timeMs: 5000, score: 50, darkness: true },
+    starTimeSec: [150, 260],
     rating: 4,
     tier: "hard",
   },
@@ -84,7 +125,12 @@ export const DIFFICULTY_PRESETS: Record<DifficultyTier, DifficultyParams> = {
     gateCount: 5,
     visualComplexity: "medium",
     timeLimitSec: null,
-    cluesEnabled: false,
+    cluesEnabled: true,
+    cluePlan: { count: 4, style: "subtle" },
+    hintLimit: 1,
+    fogStrength: 0.6,
+    penalty: { timeMs: 10000, score: 75, darkness: true },
+    starTimeSec: [210, 340],
     rating: 5,
     tier: "very-hard",
   },
@@ -97,7 +143,12 @@ export const DIFFICULTY_PRESETS: Record<DifficultyTier, DifficultyParams> = {
     gateCount: 6,
     visualComplexity: "medium",
     timeLimitSec: null,
-    cluesEnabled: false,
+    cluesEnabled: true,
+    cluePlan: { count: 5, style: "subtle" },
+    hintLimit: 1,
+    fogStrength: 0.6,
+    penalty: { timeMs: 10000, score: 100, darkness: true },
+    starTimeSec: [240, 400],
     rating: 5,
     tier: "special",
   },
