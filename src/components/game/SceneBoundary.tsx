@@ -34,7 +34,7 @@ export class SceneBoundary extends Component<Props, State> {
             <MenuButton
               onClick={() => {
                 this.setState({ failed: false });
-                actions.openLevels();
+                actions.showLevels();
               }}
             >
               LEVEL MAP
