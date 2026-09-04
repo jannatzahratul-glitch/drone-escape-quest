@@ -190,12 +190,22 @@ export function generateMaze(config: MazeConfig): Maze {
     scored[j] = tmp;
   }
   const wanted = Math.max(2, config.gateCount);
+  // Anchor the set with a gate whose walking distance matches the requested
+  // route length, so the real exit is never a couple of steps from the start.
+  const globalMax = Math.max(...scored.map((c) => c.d), 1);
+  const targetD = globalMax * Math.max(0.45, Math.min(1, config.routeLength));
+  let anchor = scored[0]!;
+  for (const c of scored) {
+    if (Math.abs(c.d - targetD) < Math.abs(anchor.d - targetD)) anchor = c;
+  }
+  chosen.push(anchor.gate);
   for (const c of scored) {
     if (chosen.length >= wanted) break;
     if (chosen.every((g) => Math.abs(g.x - c.gate.x) + Math.abs(g.y - c.gate.y) >= minSep)) {
       chosen.push(c.gate);
     }
   }
+
   for (const c of scored) {
     if (chosen.length >= wanted) break;
     if (!chosen.includes(c.gate)) chosen.push(c.gate);
