@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import { GameScene } from "@/game/scene/GameScene";
 import { installKeyboard, resetInput } from "@/game/input/input";
 import { actions, useGame } from "@/game/state/gameStore";
-import { loadProgress } from "@/game/save/SaveManager";
+import { loadProgress, getProgress } from "@/game/save/SaveManager";
+import { loadEconomy } from "@/game/economy/EconomyService";
 import { loadSettings } from "@/game/settings/SettingsManager";
 import { playCue, vibrate } from "@/game/audio/AudioManager";
 import type { Gate } from "@/game/maze/generator";
@@ -10,6 +11,7 @@ import { Hud } from "./Hud";
 import { EscapingOverlay, LevelCompleteScreen, PauseScreen, StartScreen } from "./Overlays";
 import { LevelSelectScreen } from "./LevelSelect";
 import { SettingsScreen } from "./SettingsScreen";
+import { DailyRewardScreen } from "./economy/DailyRewardScreen";
 
 /**
  * Top-level game shell: owns nothing but composition.
@@ -23,6 +25,7 @@ export function MazeEscapeGame() {
 
   useEffect(() => {
     loadProgress();
+    loadEconomy(getProgress().xp);
     loadSettings();
   }, []);
   useEffect(() => installKeyboard(), []);
@@ -71,6 +74,7 @@ export function MazeEscapeGame() {
       {phase === "menu" && <StartScreen />}
       {phase === "levels" && <LevelSelectScreen />}
       {phase === "settings" && <SettingsScreen />}
+      {phase === "daily" && <DailyRewardScreen />}
       {phase === "paused" && <PauseScreen />}
       {phase === "escaping" && <EscapingOverlay />}
       {phase === "complete" && <LevelCompleteScreen />}
