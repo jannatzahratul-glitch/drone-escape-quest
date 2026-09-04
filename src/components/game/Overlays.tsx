@@ -2,7 +2,12 @@ import { getLevelConfig, getLevelLabel } from "@/game/levels/levels";
 import { bestTime, useProgress } from "@/game/save/SaveManager";
 import { actions, formatTime, useGame } from "@/game/state/gameStore";
 import { STAR_LABEL } from "@/game/progression/scoring";
+import { useEffect, useState } from "react";
+import { Gift } from "lucide-react";
 import { MenuButton, Panel, Screen } from "./ui";
+import { CoinChip, XpBar } from "./economy/Wallet";
+import { RewardBreakdown } from "./economy/RewardBreakdown";
+import { LevelUpBurst } from "./economy/LevelUpBurst";
 
 export function StartScreen() {
   const unlocked = useProgress((p) => p.unlocked);
@@ -15,10 +20,22 @@ export function StartScreen() {
         </h1>
         <p className="mt-3 text-xs tracking-[0.35em] text-primary">THE ONE WAY OUT</p>
         <div className="mx-auto mt-6 h-px w-24 bg-border" />
+        <div className="mt-6 space-y-3 rounded-2xl border border-border/50 bg-background/30 p-4">
+          <XpBar />
+          <div className="flex justify-center">
+            <CoinChip compact />
+          </div>
+        </div>
         <div className="mt-7 space-y-3">
           <MenuButton onClick={() => actions.startLevel(Math.max(1, unlocked))}>PLAY</MenuButton>
           <MenuButton variant="ghost" onClick={actions.showLevels}>
             LEVELS
+          </MenuButton>
+          <MenuButton variant="ghost" onClick={actions.showDaily}>
+            <span className="flex items-center justify-center gap-2">
+              <Gift className="size-4 text-[#e0bd6b]" />
+              DAILY REWARD
+            </span>
           </MenuButton>
           <MenuButton variant="ghost" onClick={actions.showSettings}>
             SETTINGS
@@ -63,6 +80,13 @@ export function LevelCompleteScreen() {
   const level = useGame((s) => s.level);
   const isNewBest = useGame((s) => s.isNewBest);
   const result = useGame((s) => s.result);
+  const rewards = useGame((s) => s.rewards);
+  const levelUp = useGame((s) => s.levelUp);
+  const [showRewards, setShowRewards] = useState(false);
+  useEffect(() => {
+    const id = window.setTimeout(() => setShowRewards(true), levelUp ? 2300 : 400);
+    return () => window.clearTimeout(id);
+  }, [levelUp]);
   useProgress((p) => p.bestMs[level]);
   const best = bestTime(level) ?? finalMs;
   const stars = result?.stars ?? 1;
@@ -76,6 +100,7 @@ export function LevelCompleteScreen() {
 
   return (
     <Screen dim={50}>
+      {levelUp !== null && <LevelUpBurst level={levelUp} onDone={actions.clearLevelUp} />}
       <Panel>
         <h2 className="font-display text-2xl tracking-[0.26em] text-primary">LEVEL COMPLETE</h2>
         <p className="mt-2 text-[0.6rem] tracking-[0.3em] text-muted-foreground">
@@ -110,7 +135,24 @@ export function LevelCompleteScreen() {
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <Stat label="SCORE" value={String(result?.score ?? 0)} />
-          <Stat label="XP EARNED" value={`+${result?.xp ?? 0}`} />
+          <Stat label="STARS" value={`${stars}/3`} />
+        </div>
+
+        {rewards && (
+          <RewardBreakdown
+            coinLines={rewards.coinLines}
+            xpLines={rewards.xpLines}
+            coinTotal={rewards.coinTotal}
+            xpTotal={rewards.xpTotal}
+            run={showRewards}
+          />
+        )}
+
+        <div className="mt-4 space-y-3 rounded-2xl border border-border/50 bg-background/30 p-4">
+          <XpBar />
+          <div className="flex justify-center">
+            <CoinChip compact />
+          </div>
         </div>
 
         {isNewBest && (

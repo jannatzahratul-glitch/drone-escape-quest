@@ -14,6 +14,7 @@ import {
 import { playCue, vibrate } from "@/game/audio/AudioManager";
 import { Joystick } from "./Joystick";
 import { CluePanel } from "./CluePanel";
+import { CoinChip } from "./economy/Wallet";
 
 /** Cinematic in-game HUD: level + pause, timer, clue/hint tools, joystick. */
 export function Hud() {
@@ -89,9 +90,12 @@ export function Hud() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border/60 bg-card/50 px-4 py-2 text-right backdrop-blur-md">
-            <p className="text-[0.55rem] tracking-[0.25em] text-muted-foreground">TIME</p>
-            <p className="font-display text-lg leading-none tabular-nums">{formatTime(time)}</p>
+          <div className="flex flex-col items-end gap-2">
+            <div className="rounded-2xl border border-border/60 bg-card/50 px-4 py-2 text-right backdrop-blur-md">
+              <p className="text-[0.55rem] tracking-[0.25em] text-muted-foreground">TIME</p>
+              <p className="font-display text-lg leading-none tabular-nums">{formatTime(time)}</p>
+            </div>
+            <CoinChip compact />
           </div>
         </div>
 

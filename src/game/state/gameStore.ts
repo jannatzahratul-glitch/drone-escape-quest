@@ -5,6 +5,11 @@ import { getLevelConfig } from "../levels/levels";
 import { rateRun, type RunResult } from "../progression/scoring";
 import { nextHint } from "../hints/hints";
 import type { Clue } from "../clues/clueSystem";
+import { economy } from "../economy/EconomyService";
+import { ECONOMY } from "../economy/config";
+import { grantCompletion, type CompletionRewards } from "../economy/levelRewards";
+import { isCompleted } from "../save/SaveManager";
+import { markSafePoint } from "../rewards/revive";
 
 /**
  * Modular game-state manager.
@@ -20,7 +25,8 @@ export type GamePhase =
   | "playing"
   | "paused"
   | "escaping"
-  | "complete";
+  | "complete"
+  | "daily";
 
 export interface GameState {
   phase: GamePhase;
@@ -53,6 +59,10 @@ export interface GameState {
   taught: string[];
   result: RunResult | null;
   xp: number;
+  /** coin/XP breakdown of the finished run (granted exactly once) */
+  rewards: CompletionRewards | null;
+  /** set while the "LEVEL UP" beat plays over the results */
+  levelUp: number | null;
 }
 
 const RUN_DEFAULTS = {
@@ -76,6 +86,8 @@ const RUN_DEFAULTS = {
   taught: [] as string[],
   result: null,
   xp: 0,
+  rewards: null,
+  levelUp: null,
 };
 
 let state: GameState = {
@@ -143,6 +155,7 @@ export const actions = {
   setPlayerCell(cell: { x: number; y: number }) {
     const p = state.playerCell;
     if (p && p.x === cell.x && p.y === cell.y) return;
+    markSafePoint(cell);
     set({ playerCell: cell });
   },
 
@@ -160,6 +173,14 @@ export const actions = {
         tone: "reward",
       },
     });
+    const tierIdx = ["easy", "medium", "hard", "very-hard", "special"].indexOf(
+      getLevelConfig(state.level).difficulty.tier,
+    );
+    const coins = Math.round(
+      ECONOMY.coins.clueMin +
+        ((ECONOMY.coins.clueMax - ECONOMY.coins.clueMin) * Math.max(0, tierIdx)) / 4,
+    );
+    economy.grantClue(state.level, clue.id, coins);
     saveActions.recordClues(state.level, [clue.id]);
   },
   clearClueFlash() {
@@ -167,10 +188,19 @@ export const actions = {
   },
   discoverSecret(index: number) {
     if (state.secretsFound.includes(index)) return;
+    const tier = getLevelConfig(state.level).difficulty.tier as string;
+    const coins = ECONOMY.coins.cacheByTier[tier] ?? ECONOMY.coins.cacheByTier["medium"]!;
+    const grant = economy.grantCache(state.level, index, coins);
     set({
       secretsFound: [...state.secretsFound, index],
-      xp: state.xp + 15,
-      notice: { text: "EXPLORATION FOUND · +15 XP", at: Date.now(), tone: "reward" },
+      xp: state.xp + ECONOMY.xp.cache,
+      notice: {
+        text: grant.granted
+          ? `HIDDEN CACHE · +${coins} coins`
+          : "HIDDEN CACHE · already claimed",
+        at: Date.now(),
+        tone: "reward",
+      },
     });
   },
 
@@ -238,6 +268,7 @@ export const actions = {
         wrongGates: state.wrongGates,
         secretsFound: state.secretsFound.length,
       });
+      const firstCompletion = !isCompleted(state.level);
       const isNewBest = saveActions.completeLevel(state.level, {
         timeMs: finalMs,
         stars: result.stars,
@@ -245,13 +276,27 @@ export const actions = {
         xp: result.xp + state.xp,
         clueIds: state.discoveredClueIds,
       });
+      const rewards = grantCompletion(
+        state.level,
+        `${state.level}:${state.runKey}`,
+        result,
+        firstCompletion,
+      );
       set({
         phase: "complete",
         isNewBest,
         result,
+        rewards,
+        levelUp: rewards.leveledUp ? rewards.levelAfter : null,
         bestMs: Math.min(finalMs, state.bestMs ?? finalMs),
       });
     }, 1700);
+  },
+  clearLevelUp() {
+    if (state.levelUp !== null) set({ levelUp: null });
+  },
+  showDaily() {
+    set({ phase: "daily", segmentStart: 0, notice: null });
   },
   showLevels() {
     set({ phase: "levels", segmentStart: 0, notice: null });
