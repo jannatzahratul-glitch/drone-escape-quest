@@ -50,7 +50,9 @@ export function MazeEscapeGame() {
         paused={phase !== "playing"}
         cinematic={!inGame}
         onGate={handleGate}
-        onLeaveGate={() => actions.clearNotice()}
+        onLeaveGate={() => {
+          /* the warning fades on its own timer */
+        }}
       />
 
       {phase === "playing" || phase === "paused" ? <Hud /> : null}

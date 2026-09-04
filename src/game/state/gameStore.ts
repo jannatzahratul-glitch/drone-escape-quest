@@ -98,7 +98,8 @@ export const actions = {
     set({ phase: "menu", segmentStart: 0, accumulatedMs: 0, notice: null });
   },
   notify(text: string) {
-    if (state.notice && state.notice.text === text && Date.now() - state.notice.at < 1500) return;
+    // re-showing the same warning is fine once the previous one has expired
+    if (state.notice && state.notice.text === text) return;
     set({ notice: { text, at: Date.now() } });
   },
   clearNotice() {
