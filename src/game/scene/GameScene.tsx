@@ -64,6 +64,8 @@ export function GameScene({
   if (import.meta.env.DEV && typeof window !== "undefined") {
     (window as unknown as Record<string, unknown>)["__mazeDebug"] = {
       maze,
+      clues: build.clues,
+      hidden: build.hidden,
       tracker: tracker.current,
       setJoystick,
     };
