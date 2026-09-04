@@ -27,8 +27,8 @@ export function DroneCamera({ maze, target, zoom = 1, cinematic = false }: Drone
     const span = Math.max(maze.width, maze.height) * CELL_SIZE;
     // portrait phones need more altitude to keep the maze readable
     const portrait = size.height > size.width;
-    const height = Math.max(16, span * (portrait ? 0.5 : 0.38)) * zoom;
-    return { height, back: height * 0.62, span };
+    const height = Math.max(22, span * (portrait ? 0.95 : 0.6)) * zoom;
+    return { height, back: height * 0.5, span };
   }, [maze, zoom, size.width, size.height]);
 
   useFrame((state, rawDelta) => {
