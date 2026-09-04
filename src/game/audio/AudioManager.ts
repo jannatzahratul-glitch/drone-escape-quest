@@ -12,7 +12,9 @@ type Cue =
   | "clue"
   | "hint"
   | "footstep"
-  | "secret";
+  | "secret"
+  | "coin"
+  | "levelup";
 
 let ctx: AudioContext | null = null;
 
@@ -35,6 +37,8 @@ const CUES: Record<Cue, { freq: number[]; dur: number; type: OscillatorType; gai
   clue: { freq: [660, 880], dur: 0.3, type: "sine", gain: 0.12 },
   secret: { freq: [740, 988, 1245], dur: 0.42, type: "sine", gain: 0.11 },
   hint: { freq: [587, 784], dur: 0.24, type: "triangle", gain: 0.1 },
+  coin: { freq: [880, 1175], dur: 0.16, type: "sine", gain: 0.1 },
+  levelup: { freq: [523, 659, 784, 1047], dur: 0.7, type: "sine", gain: 0.14 },
   footstep: { freq: [90], dur: 0.06, type: "triangle", gain: 0.05 },
 };
 
