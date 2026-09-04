@@ -76,8 +76,8 @@ export function GameScene({
         args={["#0c0b10", span * (0.85 * quality.fogTightness), span * 2.3]}
       />
 
-      <ambientLight intensity={0.95} color="#8fa2c4" />
-      <hemisphereLight args={["#59688a", "#2a2119", 0.95]} />
+      <ambientLight intensity={cinematic ? 1.5 : 0.95} color="#8fa2c4" />
+      <hemisphereLight args={["#59688a", "#2a2119", cinematic ? 1.4 : 0.95]} />
       {/* cool moonlight key so the stone reads dark but never unreadable */}
       <directionalLight
         position={[span * 0.4, span * 0.95, span * 0.35]}
@@ -141,7 +141,7 @@ export function GameScene({
         motion={cinematic ? undefined : motion.current}
         cinematic={cinematic}
         focus={openGateId !== null}
-        zoom={cinematic ? 1.55 : 1}
+        zoom={cinematic ? 1.08 : 1}
       />
     </Canvas>
   );
