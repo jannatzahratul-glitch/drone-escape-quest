@@ -107,6 +107,7 @@ let state: GameState = {
   phase: "menu",
   level: 1,
   runKey: 0,
+  runStartedAt: 0,
   segmentStart: 0,
   settingsFrom: "menu",
   suspended: null,
@@ -149,6 +150,7 @@ export const actions = {
       phase: "playing",
       level: safe,
       runKey: state.runKey + 1,
+      runStartedAt: Date.now(),
       segmentStart: Date.now(),
       suspended: null,
       ...RUN_DEFAULTS,
@@ -318,7 +320,7 @@ export const actions = {
       });
       const rewards = grantCompletion(
         state.level,
-        `${state.level}:${state.runKey}`,
+        `${state.level}:${state.runStartedAt}:${state.runKey}`,
         result,
         firstCompletion,
       );
