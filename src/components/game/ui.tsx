@@ -18,14 +18,15 @@ export function Panel({ children, wide = false }: { children: ReactNode; wide?: 
 export function Screen({ children, dim = 45 }: { children: ReactNode; dim?: number }) {
   return (
     <div
-      className="absolute inset-0 flex items-center justify-center overflow-y-auto backdrop-blur-[6px]"
+      className="absolute inset-0 overflow-y-auto overscroll-contain backdrop-blur-[6px]"
       style={{
         background: `color-mix(in oklab, var(--background) ${dim}%, transparent)`,
         padding:
           "max(1.25rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left))",
       }}
     >
-      {children}
+      {/* min-h-full keeps short panels centred while tall panels stay scrollable */}
+      <div className="flex min-h-full w-full items-center justify-center">{children}</div>
     </div>
   );
 }
