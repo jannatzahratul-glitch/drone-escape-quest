@@ -34,6 +34,8 @@ export interface GameState {
   level: number;
   /** bumped on every (re)start so the 3D scene remounts cleanly */
   runKey: number;
+  /** wall-clock start of the current attempt — unique reward id per run */
+  runStartedAt: number;
   accumulatedMs: number;
   segmentStart: number;
   finalMs: number;
