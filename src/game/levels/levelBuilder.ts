@@ -41,17 +41,26 @@ export function buildLevel(level: number): LevelBuild {
   }
 
   if (!build) {
-    // extremely unlikely — fall back to the base generation so play never stalls
-    const maze = generateMaze(config.maze);
-    const gates = assignGateSymbols(maze, config.maze.seed);
-    build = {
-      level,
-      maze,
-      gates,
-      clues: buildClues(maze, gates, config.difficulty.cluePlan, config.maze.seed),
-      hidden: [],
-    };
+    // extremely unlikely — fall back to plain generation so play never stalls
+    for (const seed of [config.maze.seed, 1, 7, 13, 101]) {
+      try {
+        const maze = generateMaze({ ...config.maze, seed });
+        const gates = assignGateSymbols(maze, seed);
+        build = {
+          level,
+          maze,
+          gates,
+          clues: buildClues(maze, gates, config.difficulty.cluePlan, seed),
+          hidden: [],
+        };
+        break;
+      } catch {
+        /* try the next fallback seed */
+      }
+    }
   }
+
+  if (!build) throw new Error(`Maze generation failed for level ${level}`);
 
   cache.set(level, build);
   return build;
