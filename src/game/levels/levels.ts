@@ -1,75 +1,132 @@
+import { makeDifficulty, TIER_LABEL, type DifficultyParams, type DifficultyTier } from "../difficulty/difficulty";
 import type { MazeConfig } from "../maze/generator";
 
 /**
- * Level architecture.
+ * LevelManager
  *
- * Levels are DATA, not code: each entry is a set of difficulty parameters fed
- * to the procedural maze generator. Adding 100+ levels later means extending
- * this table (or generating it), not touching gameplay code.
- *
- * Difficulty deliberately follows a rhythm rather than a straight ramp:
- * hard -> easy -> medium -> hard -> easy -> very hard ...
+ * Levels are DATA: a difficulty tier plus optional parameter overrides.
+ * Difficulty deliberately follows a RHYTHM rather than a straight ramp so the
+ * game stays unpredictable:
+ *   1 hard-ish · 2 easy · 3 medium · 4 hard · 5 medium
+ *   6 easy · 7 hard · 8 medium · 9 very hard · 10 special challenge
  */
 export interface LevelConfig {
   id: number;
   name: string;
+  subtitle: string;
+  difficulty: DifficultyParams;
   maze: MazeConfig;
-  /** 1..5, used for HUD / future star ratings */
-  difficulty: number;
 }
 
 interface LevelSpec {
-  width: number;
-  height: number;
-  braid: number;
-  gates: number;
-  difficulty: number;
+  tier: DifficultyTier;
+  subtitle: string;
+  overrides?: Partial<DifficultyParams>;
 }
 
-/** Authored specs. Anything beyond this list is generated procedurally. */
 const SPECS: LevelSpec[] = [
-  // Level 1 — small/medium but genuinely challenging, 2 gates (1 fake).
-  { width: 15, height: 15, braid: 0.15, gates: 2, difficulty: 3 },
+  // 1 — hard-ish opener: medium maze, plenty of dead ends, only 2 gates.
+  {
+    tier: "medium",
+    subtitle: "THE FIRST DOUBT",
+    overrides: {
+      width: 17,
+      height: 17,
+      gateCount: 2,
+      deadEndDensity: 1,
+      branching: 0.5,
+      routeLength: 0.7,
+      rating: 3,
+    },
+  },
+  // 2 — easy recovery.
+  {
+    tier: "easy",
+    subtitle: "BREATHING ROOM",
+    overrides: { width: 11, height: 11, gateCount: 2, deadEndDensity: 0.55, routeLength: 0.5, rating: 1 },
+  },
+  // 3 — medium, 3 gates, more branching.
+  {
+    tier: "medium",
+    subtitle: "THREE PROMISES",
+    overrides: { width: 19, height: 19, gateCount: 3, deadEndDensity: 1, branching: 0.45, rating: 3 },
+  },
+  // 4 — hard, misleading routes.
+  {
+    tier: "hard",
+    subtitle: "FALSE CORRIDORS",
+    overrides: { width: 23, height: 21, gateCount: 4, deadEndDensity: 1, branching: 0.58, rating: 4 },
+  },
+  // 5 — medium recovery, more gates but a short route.
+  {
+    tier: "medium",
+    subtitle: "SHORT MERCY",
+    overrides: { width: 17, height: 17, gateCount: 4, deadEndDensity: 0.75, routeLength: 0.6, rating: 2 },
+  },
+  // 6 — easy, compact, 3 gates.
+  {
+    tier: "easy",
+    subtitle: "QUIET STONES",
+    overrides: { width: 13, height: 13, gateCount: 3, deadEndDensity: 0.6, routeLength: 0.55, rating: 1 },
+  },
+  // 7 — hard, long maze, many dead ends.
+  {
+    tier: "hard",
+    subtitle: "THE LONG DARK",
+    overrides: { width: 25, height: 23, gateCount: 4, deadEndDensity: 1, branching: 0.6, rating: 4 },
+  },
+  // 8 — medium, moderate maze, 4 gates.
+  {
+    tier: "medium",
+    subtitle: "FOUR WHISPERS",
+    overrides: { width: 19, height: 19, gateCount: 4, deadEndDensity: 0.9, rating: 3 },
+  },
+  // 9 — very hard.
+  {
+    tier: "very-hard",
+    subtitle: "THE LABYRINTH",
+    overrides: { width: 29, height: 27, gateCount: 5, deadEndDensity: 1, rating: 5 },
+  },
+  // 10 — special challenge.
+  {
+    tier: "special",
+    subtitle: "THE ONE WAY OUT",
+    overrides: { width: 31, height: 29, gateCount: 6, deadEndDensity: 1, branching: 0.66, rating: 5 },
+  },
 ];
 
-/** Rhythm multipliers applied to procedurally extended levels. */
-const RHYTHM = [1.0, 0.75, 0.9, 1.15, 0.7, 1.3];
+/** Rhythm applied when generating levels beyond the authored table. */
+const RHYTHM: DifficultyTier[] = ["hard", "easy", "medium", "hard", "medium", "very-hard"];
+
+export const TOTAL_LEVELS = SPECS.length;
 
 export function getLevelConfig(id: number): LevelConfig {
-  const authored = SPECS[id - 1];
-  if (authored) {
-    return {
-      id,
-      name: `Level ${id}`,
-      difficulty: authored.difficulty,
-      maze: {
-        width: authored.width,
-        height: authored.height,
-        braid: authored.braid,
-        gateCount: authored.gates,
-        seed: id * 7919 + 13,
-      },
-    };
-  }
+  const spec =
+    SPECS[id - 1] ??
+    ({
+      tier: RHYTHM[(id - TOTAL_LEVELS - 1) % RHYTHM.length] ?? "medium",
+      subtitle: "DEEPER STILL",
+    } satisfies LevelSpec);
 
-  // Procedural extension: size grows slowly, modulated by the rhythm curve.
-  const step = id - SPECS.length;
-  const rhythm = RHYTHM[step % RHYTHM.length] ?? 1;
-  const base = 15 + Math.floor(step / 2) * 2;
-  const size = Math.min(35, Math.max(11, Math.round(base * rhythm)));
-  const gates = Math.min(6, 2 + Math.floor(step / 2));
+  const difficulty = makeDifficulty(spec.tier, spec.overrides);
+
   return {
     id,
-    name: `Level ${id}`,
-    difficulty: Math.min(5, Math.max(1, Math.round(rhythm * 3.5))),
+    name: `LEVEL ${String(id).padStart(2, "0")}`,
+    subtitle: spec.subtitle,
+    difficulty,
     maze: {
-      width: size,
-      height: size,
-      braid: 0.1 + (rhythm - 0.7) * 0.2,
-      gateCount: gates,
+      width: difficulty.width,
+      height: difficulty.height,
+      deadEndDensity: difficulty.deadEndDensity,
+      branching: difficulty.branching,
+      routeLength: difficulty.routeLength,
+      gateCount: difficulty.gateCount,
       seed: id * 7919 + 13,
     },
   };
 }
 
-export const MAX_AUTHORED_LEVEL = SPECS.length;
+export function getLevelLabel(id: number) {
+  return TIER_LABEL[getLevelConfig(id).difficulty.tier];
+}

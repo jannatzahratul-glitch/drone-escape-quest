@@ -1,26 +1,33 @@
 import { useSyncExternalStore } from "react";
+import { saveActions } from "../save/SaveManager";
 
 /**
  * Modular game-state manager.
  *
  * A tiny external store (no provider needed) so both the 3D scene and the DOM
- * HUD read the same state. New phases (gameOver, revive, shop, dailyChallenge)
- * can be added to GamePhase without touching existing screens.
+ * HUD read the same state.
  */
-export type GamePhase = "menu" | "loading" | "playing" | "paused" | "complete";
+export type GamePhase =
+  | "menu"
+  | "levels"
+  | "settings"
+  | "playing"
+  | "paused"
+  | "escaping"
+  | "complete";
 
 export interface GameState {
   phase: GamePhase;
   level: number;
   /** bumped on every (re)start so the 3D scene remounts cleanly */
   runKey: number;
-  /** ms accumulated in previous play segments of this run */
   accumulatedMs: number;
-  /** timestamp when the current playing segment started (0 when not playing) */
   segmentStart: number;
-  /** final time captured on level complete */
   finalMs: number;
-  /** transient message, e.g. "this gate is sealed" */
+  bestMs: number | null;
+  isNewBest: boolean;
+  /** id of the gate currently opening (real exit) */
+  openGateId: number | null;
   notice: { text: string; at: number } | null;
 }
 
@@ -31,6 +38,9 @@ let state: GameState = {
   accumulatedMs: 0,
   segmentStart: 0,
   finalMs: 0,
+  bestMs: null,
+  isNewBest: false,
+  openGateId: null,
   notice: null,
 };
 
@@ -69,6 +79,9 @@ export const actions = {
       accumulatedMs: 0,
       segmentStart: Date.now(),
       finalMs: 0,
+      bestMs: null,
+      isNewBest: false,
+      openGateId: null,
       notice: null,
     });
   },
@@ -80,30 +93,44 @@ export const actions = {
   },
   pause() {
     if (state.phase !== "playing") return;
-    set({
-      phase: "paused",
-      accumulatedMs: getElapsedMs(),
-      segmentStart: 0,
-    });
+    set({ phase: "paused", accumulatedMs: getElapsedMs(), segmentStart: 0 });
   },
   resume() {
     if (state.phase !== "paused") return;
     set({ phase: "playing", segmentStart: Date.now() });
   },
-  complete() {
+  /** real exit reached: gate opens, short cinematic beat, then the results */
+  escape(gateId: number) {
     if (state.phase !== "playing") return;
-    set({ phase: "complete", finalMs: getElapsedMs(), segmentStart: 0 });
+    const finalMs = getElapsedMs();
+    set({ phase: "escaping", finalMs, segmentStart: 0, openGateId: gateId, notice: null });
+    window.setTimeout(() => {
+      if (getState().phase !== "escaping") return;
+      const isNewBest = saveActions.completeLevel(state.level, finalMs);
+      set({
+        phase: "complete",
+        isNewBest,
+        bestMs: Math.min(finalMs, state.bestMs ?? finalMs),
+      });
+    }, 1700);
+  },
+  showLevels() {
+    set({ phase: "levels", segmentStart: 0, notice: null });
+  },
+  showSettings() {
+    set({ phase: "settings", segmentStart: 0, notice: null });
   },
   mainMenu() {
-    set({ phase: "menu", segmentStart: 0, accumulatedMs: 0, notice: null });
+    set({
+      phase: "menu",
+      segmentStart: 0,
+      accumulatedMs: 0,
+      notice: null,
+      openGateId: null,
+    });
   },
   notify(text: string) {
-    // re-showing the same warning is fine once the previous one has expired
     if (state.notice && state.notice.text === text) return;
-    if (import.meta.env.DEV && typeof window !== "undefined") {
-      const w = window as unknown as Record<string, unknown>;
-      w["__noticeLog"] = [...((w["__noticeLog"] as string[]) ?? []), text];
-    }
     set({ notice: { text, at: Date.now() } });
   },
   clearNotice() {

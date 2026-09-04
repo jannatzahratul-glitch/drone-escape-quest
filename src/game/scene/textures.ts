@@ -1,87 +1,235 @@
 import * as THREE from "three";
 
 /**
- * Lightweight procedural stone textures (canvas based) so the prototype ships
- * no heavy assets while still avoiding flat untextured surfaces.
+ * Procedural stone textures (canvas based) — no heavy assets to download.
+ * Each generator returns a colour map plus a matching bump map so surfaces
+ * catch torch light with real relief instead of looking flat.
  */
-function noiseCanvas(
-  size: number,
-  base: [number, number, number],
-  draw?: (ctx: CanvasRenderingContext2D, size: number) => void,
-) {
+
+function makeCanvas(size: number) {
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = size;
-  const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = `rgb(${base[0]},${base[1]},${base[2]})`;
-  ctx.fillRect(0, 0, size, size);
-  draw?.(ctx, size);
-  // speckled weathering
+  return canvas;
+}
+
+function speckle(ctx: CanvasRenderingContext2D, size: number, amount: number) {
   const img = ctx.getImageData(0, 0, size, size);
   for (let i = 0; i < img.data.length; i += 4) {
-    const n = (Math.random() - 0.5) * 34;
+    const n = (Math.random() - 0.5) * amount;
     img.data[i] = Math.max(0, Math.min(255, (img.data[i] ?? 0) + n));
     img.data[i + 1] = Math.max(0, Math.min(255, (img.data[i + 1] ?? 0) + n));
     img.data[i + 2] = Math.max(0, Math.min(255, (img.data[i + 2] ?? 0) + n));
   }
   ctx.putImageData(img, 0, 0);
-  return canvas;
 }
 
-export function createWallTexture() {
-  const canvas = noiseCanvas(256, [104, 98, 88], (ctx, size) => {
-    // stacked brick courses
-    const rows = 6;
-    const h = size / rows;
-    ctx.strokeStyle = "rgba(30,26,22,0.75)";
-    ctx.lineWidth = 3;
-    for (let r = 0; r < rows; r++) {
-      const y = r * h;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(size, y);
-      ctx.stroke();
-      const offset = r % 2 ? h : 0;
-      for (let x = offset; x < size; x += h * 2) {
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x, y + h);
-        ctx.stroke();
-      }
-      ctx.fillStyle = `rgba(255,240,220,${0.03 + Math.random() * 0.05})`;
-      ctx.fillRect(0, y + 2, size, h * 0.35);
+/** Hairline cracks and chips, drawn as short branching strokes. */
+function cracks(ctx: CanvasRenderingContext2D, size: number, count: number, colour: string) {
+  ctx.strokeStyle = colour;
+  for (let i = 0; i < count; i++) {
+    let x = Math.random() * size;
+    let y = Math.random() * size;
+    let a = Math.random() * Math.PI * 2;
+    ctx.lineWidth = 0.6 + Math.random() * 1.4;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    const segs = 4 + Math.floor(Math.random() * 6);
+    for (let s = 0; s < segs; s++) {
+      a += (Math.random() - 0.5) * 1.1;
+      x += Math.cos(a) * (size * 0.04);
+      y += Math.sin(a) * (size * 0.04);
+      ctx.lineTo(x, y);
     }
-  });
+    ctx.stroke();
+  }
+}
+
+function finish(canvas: HTMLCanvasElement, repeat = 1) {
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  tex.repeat.set(repeat, repeat);
   return tex;
 }
 
-export function createFloorTexture() {
-  const canvas = noiseCanvas(256, [62, 58, 53], (ctx, size) => {
-    const tiles = 4;
-    const t = size / tiles;
-    ctx.strokeStyle = "rgba(24,21,18,0.8)";
-    ctx.lineWidth = 4;
-    for (let i = 0; i <= tiles; i++) {
+function bumpFrom(draw: (ctx: CanvasRenderingContext2D, size: number) => void, size: number) {
+  const canvas = makeCanvas(size);
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#808080";
+  ctx.fillRect(0, 0, size, size);
+  draw(ctx, size);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+
+/** Rough hewn block wall — the main maze material. */
+export function createWallTextures(size = 256) {
+  const canvas = makeCanvas(size);
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "rgb(96,90,80)";
+  ctx.fillRect(0, 0, size, size);
+
+  const rows = 5;
+  const h = size / rows;
+  for (let r = 0; r < rows; r++) {
+    const y = r * h;
+    const offset = r % 2 ? h * 0.9 : 0;
+    for (let x = -h; x < size; x += h * 1.8) {
+      const bx = x + offset;
+      const bw = h * 1.8 - 4;
+      // each block gets its own tone so the wall never reads as one flat slab
+      const tone = 78 + Math.random() * 42;
+      ctx.fillStyle = `rgb(${tone},${tone * 0.95},${tone * 0.86})`;
+      ctx.fillRect(bx + 2, y + 2, bw, h - 4);
+      // top-lit bevel + bottom shade
+      ctx.fillStyle = "rgba(255,236,205,0.10)";
+      ctx.fillRect(bx + 2, y + 2, bw, h * 0.18);
+      ctx.fillStyle = "rgba(12,10,8,0.28)";
+      ctx.fillRect(bx + 2, y + h - h * 0.2, bw, h * 0.18);
+    }
+  }
+  // mortar
+  ctx.strokeStyle = "rgba(26,22,18,0.85)";
+  ctx.lineWidth = 3;
+  for (let r = 0; r <= rows; r++) {
+    ctx.beginPath();
+    ctx.moveTo(0, r * h);
+    ctx.lineTo(size, r * h);
+    ctx.stroke();
+  }
+  cracks(ctx, size, Math.round(size / 12), "rgba(20,16,13,0.55)");
+  // damp patches
+  for (let i = 0; i < 12; i++) {
+    ctx.fillStyle = `rgba(30,36,32,${0.04 + Math.random() * 0.07})`;
+    ctx.beginPath();
+    ctx.ellipse(
+      Math.random() * size,
+      Math.random() * size,
+      size * 0.08,
+      size * 0.14,
+      Math.random(),
+      0,
+      Math.PI * 2,
+    );
+    ctx.fill();
+  }
+  speckle(ctx, size, 30);
+
+  const bump = bumpFrom((bctx, s) => {
+    const bh = s / rows;
+    for (let r = 0; r < rows; r++) {
+      const offset = r % 2 ? bh * 0.9 : 0;
+      for (let x = -bh; x < s; x += bh * 1.8) {
+        bctx.fillStyle = `rgb(${170 + Math.random() * 50},${170},${170})`;
+        bctx.fillRect(x + offset + 3, r * bh + 3, bh * 1.8 - 6, bh - 6);
+      }
+    }
+    bctx.strokeStyle = "rgb(40,40,40)";
+    bctx.lineWidth = 4;
+    for (let r = 0; r <= rows; r++) {
+      bctx.beginPath();
+      bctx.moveTo(0, r * bh);
+      bctx.lineTo(s, r * bh);
+      bctx.stroke();
+    }
+    cracks(bctx, s, Math.round(s / 12), "rgb(50,50,50)");
+  }, size);
+
+  return { map: finish(canvas), bumpMap: bump };
+}
+
+/** Worn flagstone floor. */
+export function createFloorTextures(size = 256) {
+  const canvas = makeCanvas(size);
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "rgb(58,54,49)";
+  ctx.fillRect(0, 0, size, size);
+
+  const tiles = 3;
+  const t = size / tiles;
+  for (let ty = 0; ty < tiles; ty++) {
+    for (let tx = 0; tx < tiles; tx++) {
+      const tone = 52 + Math.random() * 30;
+      ctx.fillStyle = `rgb(${tone},${tone * 0.96},${tone * 0.9})`;
+      ctx.fillRect(tx * t + 3, ty * t + 3, t - 6, t - 6);
+      ctx.fillStyle = "rgba(255,240,215,0.05)";
+      ctx.fillRect(tx * t + 3, ty * t + 3, t - 6, 4);
+    }
+  }
+  ctx.strokeStyle = "rgba(20,17,14,0.9)";
+  ctx.lineWidth = 5;
+  for (let i = 0; i <= tiles; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * t, 0);
+    ctx.lineTo(i * t, size);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, i * t);
+    ctx.lineTo(size, i * t);
+    ctx.stroke();
+  }
+  cracks(ctx, size, Math.round(size / 16), "rgba(18,15,12,0.6)");
+  for (let i = 0; i < 30; i++) {
+    ctx.fillStyle = `rgba(210,200,180,${Math.random() * 0.05})`;
+    ctx.beginPath();
+    ctx.arc(Math.random() * size, Math.random() * size, Math.random() * size * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  speckle(ctx, size, 24);
+
+  const bump = bumpFrom((bctx, s) => {
+    const bt = s / tiles;
+    for (let ty = 0; ty < tiles; ty++) {
+      for (let tx = 0; tx < tiles; tx++) {
+        const v = 160 + Math.random() * 50;
+        bctx.fillStyle = `rgb(${v},${v},${v})`;
+        bctx.fillRect(tx * bt + 4, ty * bt + 4, bt - 8, bt - 8);
+      }
+    }
+    cracks(bctx, s, Math.round(s / 16), "rgb(60,60,60)");
+  }, size);
+
+  return { map: finish(canvas), bumpMap: bump };
+}
+
+/** Heavy timber door with iron banding, used on every gate. */
+export function createDoorTextures(size = 256) {
+  const canvas = makeCanvas(size);
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "rgb(58,40,26)";
+  ctx.fillRect(0, 0, size, size);
+  const planks = 5;
+  const w = size / planks;
+  for (let i = 0; i < planks; i++) {
+    const tone = 48 + Math.random() * 26;
+    ctx.fillStyle = `rgb(${tone + 12},${tone * 0.72},${tone * 0.45})`;
+    ctx.fillRect(i * w + 2, 0, w - 4, size);
+    // wood grain
+    ctx.strokeStyle = "rgba(28,18,10,0.35)";
+    ctx.lineWidth = 1;
+    for (let g = 0; g < 7; g++) {
+      const gx = i * w + 4 + Math.random() * (w - 8);
       ctx.beginPath();
-      ctx.moveTo(i * t, 0);
-      ctx.lineTo(i * t, size);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(0, i * t);
-      ctx.lineTo(size, i * t);
+      ctx.moveTo(gx, 0);
+      for (let y = 0; y < size; y += 16) ctx.lineTo(gx + Math.sin(y * 0.05) * 2.5, y);
       ctx.stroke();
     }
-    for (let i = 0; i < 40; i++) {
-      ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.04})`;
+  }
+  // iron bands + rivets
+  [0.18, 0.78].forEach((p) => {
+    ctx.fillStyle = "rgb(46,44,45)";
+    ctx.fillRect(0, size * p, size, size * 0.09);
+    ctx.fillStyle = "rgba(150,148,145,0.25)";
+    ctx.fillRect(0, size * p, size, 3);
+    for (let r = 0; r < 8; r++) {
+      ctx.fillStyle = "rgb(96,92,88)";
       ctx.beginPath();
-      ctx.arc(Math.random() * size, Math.random() * size, Math.random() * 18, 0, Math.PI * 2);
+      ctx.arc(size * 0.07 + r * size * 0.125, size * (p + 0.045), size * 0.012, 0, Math.PI * 2);
       ctx.fill();
     }
   });
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+  speckle(ctx, size, 20);
+  return { map: finish(canvas) };
 }

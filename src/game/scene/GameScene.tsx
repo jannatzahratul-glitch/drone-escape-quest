@@ -6,19 +6,22 @@ import * as THREE from "three";
 import { CELL_SIZE, cellToWorld, generateMaze, type Gate } from "../maze/generator";
 import { getLevelConfig } from "../levels/levels";
 import { setJoystick } from "../input/input";
+import { getQuality, useSettings, QUALITY } from "../settings/SettingsManager";
 import { DroneCamera } from "./DroneCamera";
-
-const MAZE_CENTER = new THREE.Vector3(0, 0, 0);
 import { Gates } from "./Gates";
 import { MazeMesh } from "./MazeMesh";
 import { Player } from "./Player";
 import { Torches } from "./Torches";
+
+const MAZE_CENTER = new THREE.Vector3(0, 0, 0);
 
 interface GameSceneProps {
   level: number;
   paused: boolean;
   /** menu backdrop mode: slow orbit, no player control */
   cinematic?: boolean;
+  /** gate currently swinging open (the real exit) */
+  openGateId?: number | null;
   onGate?: (gate: Gate) => void;
   onLeaveGate?: () => void;
 }
@@ -31,9 +34,12 @@ export function GameScene({
   level,
   paused,
   cinematic = false,
+  openGateId = null,
   onGate,
   onLeaveGate,
 }: GameSceneProps) {
+  const graphics = useSettings((s) => s.graphics);
+  const quality = QUALITY[graphics] ?? getQuality();
   const maze = useMemo(() => generateMaze(getLevelConfig(level).maze), [level]);
   const tracker = useRef(
     new THREE.Vector3(
@@ -43,6 +49,7 @@ export function GameScene({
       })(),
     ),
   );
+  const motion = useRef(new THREE.Vector2(0, 0));
 
   const span = Math.max(maze.width, maze.height) * CELL_SIZE;
 
@@ -57,24 +64,28 @@ export function GameScene({
 
   return (
     <Canvas
-      shadows
-      dpr={[1, 1.75]}
-      gl={{ antialias: true, powerPreference: "high-performance" }}
+      shadows={quality.shadows}
+      dpr={quality.dpr}
+      gl={{ antialias: quality.antialias, powerPreference: "high-performance" }}
       camera={{ fov: 45, near: 0.5, far: span * 4 }}
       style={{ touchAction: "none" }}
     >
-      <color attach="background" args={["#0a0a0d"]} />
-      <fog attach="fog" args={["#0d0c10", span * 1.1, span * 2.4]} />
+      <color attach="background" args={["#08080b"]} />
+      <fog
+        attach="fog"
+        args={["#0c0b10", span * (cinematic ? 1.5 : 0.85 * quality.fogTightness), span * (cinematic ? 3.2 : 2.3)]}
+      />
 
-      <ambientLight intensity={1.15} color="#9fb0d0" />
-      <hemisphereLight args={["#5d6e92", "#2c2319", 1.05]} />
+      <ambientLight intensity={cinematic ? 1.5 : 0.95} color="#8fa2c4" />
+      <hemisphereLight args={["#59688a", "#2a2119", cinematic ? 1.4 : 0.95]} />
+      {/* cool moonlight key so the stone reads dark but never unreadable */}
       <directionalLight
-        position={[span * 0.4, span * 0.9, span * 0.35]}
-        intensity={3.1}
-        color="#ffe7c4"
-        castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
+        position={[span * 0.4, span * 0.95, span * 0.35]}
+        intensity={2.6}
+        color="#d8e2ff"
+        castShadow={quality.shadows}
+        shadow-mapSize-width={quality.shadowMapSize}
+        shadow-mapSize-height={quality.shadowMapSize}
         shadow-camera-left={-span * 0.75}
         shadow-camera-right={span * 0.75}
         shadow-camera-top={span * 0.75}
@@ -82,27 +93,42 @@ export function GameScene({
         shadow-camera-far={span * 3}
         shadow-bias={-0.0012}
       />
+      {/* warm bounce from the torches below */}
+      <directionalLight
+        position={[-span * 0.3, span * 0.4, -span * 0.4]}
+        intensity={0.8}
+        color="#ffb066"
+      />
 
       <Suspense fallback={null}>
         <Environment resolution={64}>
-          <Lightformer intensity={1.2} position={[0, 6, 0]} scale={[12, 12, 1]} color="#5c6a8c" />
+          <Lightformer intensity={1.1} position={[0, 6, 0]} scale={[14, 14, 1]} color="#54628a" />
           <Lightformer
-            intensity={0.6}
+            intensity={0.7}
             color="#ff9a55"
             position={[-6, 2, 2]}
             rotation-y={Math.PI / 2}
-            scale={[20, 2, 1]}
+            scale={[22, 2, 1]}
+          />
+          <Lightformer
+            intensity={0.5}
+            color="#6d86c4"
+            position={[6, 3, -3]}
+            rotation-y={-Math.PI / 2}
+            scale={[22, 3, 1]}
           />
         </Environment>
 
-        <MazeMesh maze={maze} />
-        <Gates maze={maze} />
-        <Torches maze={maze} />
+        <MazeMesh maze={maze} quality={quality} />
+        <Gates maze={maze} quality={quality} openGateId={openGateId} />
+        <Torches maze={maze} quality={quality} />
         {!cinematic && (
           <Player
             maze={maze}
             tracker={tracker.current}
+            motion={motion.current}
             paused={paused}
+            quality={quality}
             onGate={(g) => onGate?.(g)}
             onLeaveGate={() => onLeaveGate?.()}
           />
@@ -112,8 +138,10 @@ export function GameScene({
       <DroneCamera
         maze={maze}
         target={cinematic ? MAZE_CENTER : tracker.current}
+        motion={cinematic ? undefined : motion.current}
         cinematic={cinematic}
-        zoom={cinematic ? 1.9 : 1}
+        focus={openGateId !== null}
+        zoom={cinematic ? 0.85 : 1}
       />
     </Canvas>
   );

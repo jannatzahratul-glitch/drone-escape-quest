@@ -2,19 +2,29 @@ import { useEffect } from "react";
 import { GameScene } from "@/game/scene/GameScene";
 import { installKeyboard, resetInput } from "@/game/input/input";
 import { actions, useGame } from "@/game/state/gameStore";
+import { loadProgress } from "@/game/save/SaveManager";
+import { loadSettings } from "@/game/settings/SettingsManager";
+import { playCue, vibrate } from "@/game/audio/AudioManager";
 import type { Gate } from "@/game/maze/generator";
 import { Hud } from "./Hud";
-import { LevelCompleteScreen, PauseScreen, StartScreen } from "./Overlays";
+import { EscapingOverlay, LevelCompleteScreen, PauseScreen, StartScreen } from "./Overlays";
+import { LevelSelectScreen } from "./LevelSelect";
+import { SettingsScreen } from "./SettingsScreen";
 
 /**
  * Top-level game shell: owns nothing but composition.
- * 3D engine (GameScene) and UI (Hud/overlays) stay fully separated.
+ * 3D engine (GameScene) and UI (HUD / screens) stay fully separated.
  */
 export function MazeEscapeGame() {
   const phase = useGame((s) => s.phase);
   const level = useGame((s) => s.level);
   const runKey = useGame((s) => s.runKey);
+  const openGateId = useGame((s) => s.openGateId);
 
+  useEffect(() => {
+    loadProgress();
+    loadSettings();
+  }, []);
   useEffect(() => installKeyboard(), []);
   useEffect(() => {
     resetInput();
@@ -29,17 +39,18 @@ export function MazeEscapeGame() {
     };
   }, []);
 
-  const inGame = phase !== "menu";
+  const inGame = phase === "playing" || phase === "paused" || phase === "escaping" || phase === "complete";
 
   const handleGate = (gate: Gate) => {
-    if (import.meta.env.DEV && typeof window !== "undefined") {
-      const w = window as unknown as Record<string, unknown>;
-      const log = (w["__gateLog"] as Gate[]) ?? [];
-      log.push(gate);
-      w["__gateLog"] = log;
+    if (gate.isReal) {
+      playCue("gate-open");
+      vibrate([20, 40, 60]);
+      actions.escape(gate.id);
+    } else {
+      playCue("gate-locked");
+      vibrate(35);
+      actions.notify("Locked. Not the way out.");
     }
-    if (gate.isReal) actions.complete();
-    else actions.notify("This gate is sealed — a dead end. Keep searching.");
   };
 
   return (
@@ -49,15 +60,19 @@ export function MazeEscapeGame() {
         level={inGame ? level : 1}
         paused={phase !== "playing"}
         cinematic={!inGame}
+        openGateId={openGateId}
         onGate={handleGate}
         onLeaveGate={() => {
           /* the warning fades on its own timer */
         }}
       />
 
-      {phase === "playing" || phase === "paused" ? <Hud /> : null}
+      {(phase === "playing" || phase === "paused" || phase === "escaping") && <Hud />}
       {phase === "menu" && <StartScreen />}
+      {phase === "levels" && <LevelSelectScreen />}
+      {phase === "settings" && <SettingsScreen />}
       {phase === "paused" && <PauseScreen />}
+      {phase === "escaping" && <EscapingOverlay />}
       {phase === "complete" && <LevelCompleteScreen />}
     </main>
   );
