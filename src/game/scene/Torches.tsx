@@ -3,35 +3,54 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { CELL_SIZE, WALL_HEIGHT, cellToWorld, isWall, type Maze } from "../maze/generator";
+import type { QualityProfile } from "../settings/SettingsManager";
 
 /**
- * A handful of flickering wall torches. Count is capped for mobile GPUs —
- * lights are the most expensive thing in this scene.
+ * Wall torches + small environmental props (rubble, moss stones) scattered in
+ * dead ends. Light count is budgeted by the graphics setting since lights are
+ * the most expensive thing in the scene on mobile GPUs.
  */
-const MAX_TORCHES = 5;
-
-export function Torches({ maze }: { maze: Maze }) {
+export function Torches({ maze, quality }: { maze: Maze; quality: QualityProfile }) {
   const lights = useRef<Array<THREE.PointLight | null>>([]);
+  const flames = useRef<Array<THREE.Mesh | null>>([]);
 
   const spots = useMemo(() => {
+    const max = quality.torchCount;
     const out: Array<{ pos: [number, number, number] }> = [];
-    const stride = Math.max(2, Math.floor((maze.width * maze.height) / (MAX_TORCHES * 6)));
-    let counter = 0;
-    for (let y = 1; y < maze.height - 1 && out.length < MAX_TORCHES; y++) {
-      for (let x = 1; x < maze.width - 1 && out.length < MAX_TORCHES; x++) {
-        if (isWall(maze, x, y)) continue;
-        if (counter++ % stride !== 0) continue;
-        const [wx, wz] = cellToWorld(maze, x, y);
-        out.push({ pos: [wx, WALL_HEIGHT * 0.8, wz] });
+    const open: Array<[number, number]> = [];
+    for (let y = 1; y < maze.height - 1; y++) {
+      for (let x = 1; x < maze.width - 1; x++) {
+        if (!isWall(maze, x, y)) open.push([x, y]);
       }
     }
+    const stride = Math.max(1, Math.floor(open.length / max));
+    for (let i = 0; i < open.length && out.length < max; i += stride) {
+      const [x, y] = open[i]!;
+      const [wx, wz] = cellToWorld(maze, x, y);
+      out.push({ pos: [wx, WALL_HEIGHT * 0.82, wz] });
+    }
     return out;
-  }, [maze]);
+  }, [maze, quality.torchCount]);
+
+  const props = useMemo(() => {
+    if (quality.particles === 0) return [];
+    return maze.deadEnds.slice(0, 24).map((d, i) => {
+      const [wx, wz] = cellToWorld(maze, d.x, d.y);
+      const n = ((i * 37) % 13) / 13;
+      return { pos: [wx + (n - 0.5) * 0.8, 0, wz + (n - 0.5) * 0.8] as [number, number, number], n };
+    });
+  }, [maze, quality.particles]);
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     lights.current.forEach((l, i) => {
-      if (l) l.intensity = 9 + Math.sin(t * 7 + i * 1.7) * 2 + Math.sin(t * 13 + i) * 1;
+      if (l) l.intensity = 8 + Math.sin(t * 7 + i * 1.7) * 2 + Math.sin(t * 13 + i) * 1;
+    });
+    flames.current.forEach((f, i) => {
+      if (f) {
+        const s = 1 + Math.sin(t * 9 + i * 2.1) * 0.16;
+        f.scale.set(s, 1 + Math.sin(t * 11 + i) * 0.22, s);
+      }
     });
   });
 
@@ -39,9 +58,17 @@ export function Torches({ maze }: { maze: Maze }) {
     <group>
       {spots.map((s, i) => (
         <group key={i} position={s.pos}>
-          <mesh>
-            <sphereGeometry args={[0.13, 8, 6]} />
+          <mesh
+            ref={(el) => {
+              flames.current[i] = el;
+            }}
+          >
+            <sphereGeometry args={[0.14, 8, 6]} />
             <meshBasicMaterial color="#ffc06a" />
+          </mesh>
+          <mesh position={[0, -0.28, 0]}>
+            <cylinderGeometry args={[0.04, 0.05, 0.4, 6]} />
+            <meshStandardMaterial color="#3a2b1d" roughness={0.95} />
           </mesh>
           <pointLight
             ref={(el) => {
@@ -52,6 +79,20 @@ export function Torches({ maze }: { maze: Maze }) {
             intensity={9}
             castShadow={false}
           />
+        </group>
+      ))}
+
+      {/* small rubble props to break up empty dead ends */}
+      {props.map((p, i) => (
+        <group key={`p${i}`} position={p.pos} rotation-y={p.n * Math.PI}>
+          <mesh position={[0, 0.11, 0]} castShadow={quality.shadows} receiveShadow>
+            <dodecahedronGeometry args={[0.16 + p.n * 0.1, 0]} />
+            <meshStandardMaterial color="#5a5348" roughness={0.95} />
+          </mesh>
+          <mesh position={[0.3, 0.06, 0.15]} castShadow={quality.shadows}>
+            <dodecahedronGeometry args={[0.09, 0]} />
+            <meshStandardMaterial color="#4c463c" roughness={0.95} />
+          </mesh>
         </group>
       ))}
     </group>
