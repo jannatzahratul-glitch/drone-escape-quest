@@ -161,7 +161,9 @@ export function generateMaze(config: MazeConfig): Maze {
   // shuffle candidates, then greedily pick well-separated gates
   for (let i = scored.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));
-    [scored[i], scored[j]] = [scored[j], scored[i]];
+    const tmp = scored[i]!;
+    scored[i] = scored[j]!;
+    scored[j] = tmp;
   }
   const wanted = Math.max(2, config.gateCount);
   for (const c of scored) {
