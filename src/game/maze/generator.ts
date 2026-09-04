@@ -71,7 +71,7 @@ export function generateMaze(config: MazeConfig): Maze {
   const stack: Array<[number, number]> = [[startX, startY]];
 
   while (stack.length) {
-    const [cx, cy] = stack[stack.length - 1];
+    const [cx, cy] = stack[stack.length - 1]!;
     const dirs: Array<[number, number]> = [
       [0, -2],
       [0, 2],
@@ -81,7 +81,9 @@ export function generateMaze(config: MazeConfig): Maze {
     // shuffle
     for (let i = dirs.length - 1; i > 0; i--) {
       const j = Math.floor(rand() * (i + 1));
-      [dirs[i], dirs[j]] = [dirs[j], dirs[i]];
+      const tmp = dirs[i]!;
+      dirs[i] = dirs[j]!;
+      dirs[j] = tmp;
     }
     let carved = false;
     for (const [dx, dy] of dirs) {
@@ -119,7 +121,7 @@ export function generateMaze(config: MazeConfig): Maze {
               y + dy * 2 < height - 1,
           );
           if (closed.length) {
-            const [dx, dy] = closed[Math.floor(rand() * closed.length)];
+            const [dx, dy] = closed[Math.floor(rand() * closed.length)]!;
             cells[idx(x + dx, y + dy)] = 0;
           }
         }
@@ -201,13 +203,14 @@ function bfs(cells: Uint8Array, width: number, height: number, from: { x: number
   dist[idx(from.x, from.y)] = 0;
   while (queue.length) {
     const { x, y } = queue.shift()!;
-    const d = dist[idx(x, y)];
-    for (const [dx, dy] of [
+    const d = dist[idx(x, y)]!;
+    const steps: Array<[number, number]> = [
       [0, -1],
       [0, 1],
       [-1, 0],
       [1, 0],
-    ]) {
+    ];
+    for (const [dx, dy] of steps) {
       const nx = x + dx;
       const ny = y + dy;
       if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
