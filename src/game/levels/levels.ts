@@ -33,7 +33,7 @@ const SPECS: LevelSpec[] = [
       width: 17,
       height: 17,
       gateCount: 2,
-      deadEndDensity: 0.85,
+      deadEndDensity: 1,
       branching: 0.5,
       routeLength: 0.95,
       rating: 3,
@@ -43,55 +43,55 @@ const SPECS: LevelSpec[] = [
   {
     tier: "easy",
     subtitle: "BREATHING ROOM",
-    overrides: { width: 11, height: 11, gateCount: 2, deadEndDensity: 0.35, routeLength: 0.5, rating: 1 },
+    overrides: { width: 11, height: 11, gateCount: 2, deadEndDensity: 0.55, routeLength: 0.5, rating: 1 },
   },
   // 3 — medium, 3 gates, more branching.
   {
     tier: "medium",
     subtitle: "THREE PROMISES",
-    overrides: { width: 19, height: 19, gateCount: 3, deadEndDensity: 0.75, branching: 0.45, rating: 3 },
+    overrides: { width: 19, height: 19, gateCount: 3, deadEndDensity: 1, branching: 0.45, rating: 3 },
   },
   // 4 — hard, misleading routes.
   {
     tier: "hard",
     subtitle: "FALSE CORRIDORS",
-    overrides: { width: 23, height: 21, gateCount: 4, deadEndDensity: 0.9, branching: 0.58, rating: 4 },
+    overrides: { width: 23, height: 21, gateCount: 4, deadEndDensity: 1, branching: 0.58, rating: 4 },
   },
   // 5 — medium recovery, more gates but a short route.
   {
     tier: "medium",
     subtitle: "SHORT MERCY",
-    overrides: { width: 17, height: 17, gateCount: 4, deadEndDensity: 0.6, routeLength: 0.6, rating: 2 },
+    overrides: { width: 17, height: 17, gateCount: 4, deadEndDensity: 0.75, routeLength: 0.6, rating: 2 },
   },
   // 6 — easy, compact, 3 gates.
   {
     tier: "easy",
     subtitle: "QUIET STONES",
-    overrides: { width: 13, height: 13, gateCount: 3, deadEndDensity: 0.4, routeLength: 0.55, rating: 1 },
+    overrides: { width: 13, height: 13, gateCount: 3, deadEndDensity: 0.6, routeLength: 0.55, rating: 1 },
   },
   // 7 — hard, long maze, many dead ends.
   {
     tier: "hard",
     subtitle: "THE LONG DARK",
-    overrides: { width: 25, height: 23, gateCount: 4, deadEndDensity: 0.95, branching: 0.6, rating: 4 },
+    overrides: { width: 25, height: 23, gateCount: 4, deadEndDensity: 1, branching: 0.6, rating: 4 },
   },
   // 8 — medium, moderate maze, 4 gates.
   {
     tier: "medium",
     subtitle: "FOUR WHISPERS",
-    overrides: { width: 19, height: 19, gateCount: 4, deadEndDensity: 0.7, rating: 3 },
+    overrides: { width: 19, height: 19, gateCount: 4, deadEndDensity: 0.9, rating: 3 },
   },
   // 9 — very hard.
   {
     tier: "very-hard",
     subtitle: "THE LABYRINTH",
-    overrides: { width: 29, height: 27, gateCount: 5, deadEndDensity: 0.97, rating: 5 },
+    overrides: { width: 29, height: 27, gateCount: 5, deadEndDensity: 1, rating: 5 },
   },
   // 10 — special challenge.
   {
     tier: "special",
     subtitle: "THE ONE WAY OUT",
-    overrides: { width: 31, height: 29, gateCount: 6, deadEndDensity: 0.94, branching: 0.66, rating: 5 },
+    overrides: { width: 31, height: 29, gateCount: 6, deadEndDensity: 1, branching: 0.66, rating: 5 },
   },
 ];
 

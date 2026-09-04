@@ -209,7 +209,8 @@ export function generateMaze(config: MazeConfig): Maze {
     d: scored.find((c) => c.gate === g)?.d ?? 0,
   }));
   const maxD = Math.max(...withDist.map((w) => w.d), 1);
-  const wantD = maxD * Math.max(0.2, Math.min(1, config.routeLength));
+  // never place the real exit right next to the start, even on easy levels
+  const wantD = maxD * Math.max(0.45, Math.min(1, config.routeLength));
   let realIndex = 0;
   let bestDelta = Infinity;
   withDist.forEach((w, i) => {

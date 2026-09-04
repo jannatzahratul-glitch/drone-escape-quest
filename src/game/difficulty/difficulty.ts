@@ -39,7 +39,7 @@ export const DIFFICULTY_PRESETS: Record<DifficultyTier, DifficultyParams> = {
   easy: {
     width: 13,
     height: 13,
-    deadEndDensity: 0.45,
+    deadEndDensity: 0.6,
     branching: 0.25,
     routeLength: 0.55,
     gateCount: 2,
@@ -52,7 +52,7 @@ export const DIFFICULTY_PRESETS: Record<DifficultyTier, DifficultyParams> = {
   medium: {
     width: 17,
     height: 17,
-    deadEndDensity: 0.7,
+    deadEndDensity: 0.85,
     branching: 0.42,
     routeLength: 0.75,
     gateCount: 3,
@@ -65,7 +65,7 @@ export const DIFFICULTY_PRESETS: Record<DifficultyTier, DifficultyParams> = {
   hard: {
     width: 21,
     height: 21,
-    deadEndDensity: 0.88,
+    deadEndDensity: 1,
     branching: 0.55,
     routeLength: 0.9,
     gateCount: 4,
@@ -78,7 +78,7 @@ export const DIFFICULTY_PRESETS: Record<DifficultyTier, DifficultyParams> = {
   "very-hard": {
     width: 27,
     height: 27,
-    deadEndDensity: 0.95,
+    deadEndDensity: 1,
     branching: 0.62,
     routeLength: 1,
     gateCount: 5,
@@ -91,7 +91,7 @@ export const DIFFICULTY_PRESETS: Record<DifficultyTier, DifficultyParams> = {
   special: {
     width: 29,
     height: 29,
-    deadEndDensity: 0.92,
+    deadEndDensity: 1,
     branching: 0.68,
     routeLength: 1,
     gateCount: 6,
