@@ -118,6 +118,17 @@ const noGrant = (): GrantResult => {
   return { granted: false, coins: 0, xp: 0, levelBefore: l, levelAfter: l };
 };
 
+/**
+ * Keep the ledger bounded: permanent one-off ids (clue/cache/first/daily) are
+ * always kept, per-run ids only for the most recent 50 attempts.
+ */
+function pruneClaimed(ids: string[]) {
+  const runs = ids.filter((i) => i.startsWith("run:"));
+  if (runs.length <= 50) return ids;
+  const keep = new Set(runs.slice(-50));
+  return ids.filter((i) => !i.startsWith("run:") || keep.has(i));
+}
+
 /** Core idempotent grant. Returns granted:false when `id` was already paid. */
 function grant(id: string, coins: number, xp: number, reason: string): GrantResult {
   if (state.claimed.includes(id)) return noGrant();
@@ -126,7 +137,7 @@ function grant(id: string, coins: number, xp: number, reason: string): GrantResu
   set({
     coins: Math.max(0, state.coins + coins),
     xp: Math.max(0, state.xp + xp),
-    claimed: [...state.claimed, id],
+    claimed: pruneClaimed([...state.claimed, id]),
     history: [entry, ...state.history].slice(0, 60),
   });
   return {
