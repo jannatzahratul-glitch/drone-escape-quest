@@ -47,6 +47,10 @@ export interface GameState {
   playerCell: { x: number; y: number } | null;
   /** brief darkening pulse after a wrong gate on harder levels */
   penaltyFlash: number;
+  /** gate the player is standing next to (prompt "ENTER") */
+  nearGate: number | null;
+  /** tutorial beats already shown this run */
+  taught: string[];
   result: RunResult | null;
   xp: number;
 }
@@ -68,6 +72,8 @@ const RUN_DEFAULTS = {
   cluePanelOpen: false,
   playerCell: null,
   penaltyFlash: 0,
+  nearGate: null as number | null,
+  taught: [] as string[],
   result: null,
   xp: 0,
 };
@@ -166,6 +172,16 @@ export const actions = {
       xp: state.xp + 15,
       notice: { text: "EXPLORATION FOUND · +15 XP", at: Date.now(), tone: "reward" },
     });
+  },
+
+  setNearGate(id: number | null) {
+    if (state.nearGate === id) return;
+    const patch: Partial<GameState> = { nearGate: id };
+    if (id !== null && !state.taught.includes("gate")) {
+      patch.taught = [...state.taught, "gate"];
+      patch.notice = { text: "Not every gate leads outside.", at: Date.now(), tone: "info" };
+    }
+    set(patch);
   },
 
   toggleCluePanel() {
