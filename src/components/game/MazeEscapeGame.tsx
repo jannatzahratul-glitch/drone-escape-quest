@@ -32,6 +32,12 @@ export function MazeEscapeGame() {
   const inGame = phase !== "menu";
 
   const handleGate = (gate: Gate) => {
+    if (import.meta.env.DEV && typeof window !== "undefined") {
+      const w = window as unknown as Record<string, unknown>;
+      const log = (w["__gateLog"] as Gate[]) ?? [];
+      log.push(gate);
+      w["__gateLog"] = log;
+    }
     if (gate.isReal) actions.complete();
     else actions.notify("This gate is sealed — a dead end. Keep searching.");
   };
