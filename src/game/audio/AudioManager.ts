@@ -4,7 +4,15 @@ import { getSettings } from "../settings/SettingsManager";
  * AudioManager — lightweight WebAudio placeholder tones. No asset files yet;
  * real SFX/music can be dropped in behind the same play() API later.
  */
-type Cue = "gate-open" | "gate-locked" | "complete" | "ui";
+type Cue =
+  | "gate-open"
+  | "gate-locked"
+  | "complete"
+  | "ui"
+  | "clue"
+  | "hint"
+  | "footstep"
+  | "secret";
 
 let ctx: AudioContext | null = null;
 
@@ -24,6 +32,10 @@ const CUES: Record<Cue, { freq: number[]; dur: number; type: OscillatorType; gai
   "gate-locked": { freq: [150, 110], dur: 0.22, type: "triangle", gain: 0.14 },
   complete: { freq: [392, 523, 659, 784], dur: 0.75, type: "sine", gain: 0.18 },
   ui: { freq: [520], dur: 0.07, type: "sine", gain: 0.08 },
+  clue: { freq: [660, 880], dur: 0.3, type: "sine", gain: 0.12 },
+  secret: { freq: [740, 988, 1245], dur: 0.42, type: "sine", gain: 0.11 },
+  hint: { freq: [587, 784], dur: 0.24, type: "triangle", gain: 0.1 },
+  footstep: { freq: [90], dur: 0.06, type: "triangle", gain: 0.05 },
 };
 
 export function playCue(cue: Cue) {
