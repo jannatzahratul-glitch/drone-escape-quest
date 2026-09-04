@@ -100,6 +100,10 @@ export const actions = {
   notify(text: string) {
     // re-showing the same warning is fine once the previous one has expired
     if (state.notice && state.notice.text === text) return;
+    if (import.meta.env.DEV && typeof window !== "undefined") {
+      const w = window as unknown as Record<string, unknown>;
+      w["__noticeLog"] = [...((w["__noticeLog"] as string[]) ?? []), text];
+    }
     set({ notice: { text, at: Date.now() } });
   },
   clearNotice() {
