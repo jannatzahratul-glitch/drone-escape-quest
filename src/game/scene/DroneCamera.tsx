@@ -75,12 +75,9 @@ export function DroneCamera({
     const leadZ = motion ? THREE.MathUtils.clamp(motion.y, -5, 5) * 0.35 : 0;
 
     const angle = cinematic ? t * 0.07 : 0;
-    // only pan as far as needed: if the maze already fits on screen the rig
-    // stays centred on it instead of drifting off into the void
-    const visHalfZ = height * Math.tan((45 / 2) * (Math.PI / 180));
-    const visHalfX = visHalfZ * Math.max(0.3, size.width / Math.max(1, size.height));
-    const marginX = Math.max(0, rig.halfW - visHalfX * 0.85);
-    const marginZ = Math.max(0, rig.halfH - visHalfZ * 0.7);
+    // the player stays centred; the rig only stops just past the maze edge
+    const marginX = rig.halfW + CELL_SIZE;
+    const marginZ = rig.halfH + CELL_SIZE;
     const fx = THREE.MathUtils.clamp(lag.current.x + leadX, -marginX, marginX);
     const fz = THREE.MathUtils.clamp(lag.current.z + leadZ, -marginZ, marginZ);
 
