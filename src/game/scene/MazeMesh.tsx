@@ -1,3 +1,4 @@
+import type {} from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { CELL_SIZE, WALL_HEIGHT, cellToWorld, type Maze } from "../maze/generator";
