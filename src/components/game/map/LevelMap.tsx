@@ -86,7 +86,7 @@ function LevelNode({
   index: number;
   state: "locked" | "unlocked" | "current" | "completed";
   stars: number;
-  best?: number;
+  best?: number | undefined;
   onSelect: () => void;
 }) {
   const finale = isFinale(id);
