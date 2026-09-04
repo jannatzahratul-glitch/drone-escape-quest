@@ -16,7 +16,7 @@ interface DroneCameraProps {
   maze: Maze;
   target: THREE.Vector3;
   /** player velocity, used for a subtle look-ahead */
-  motion?: THREE.Vector2;
+  motion?: THREE.Vector2 | undefined;
   /** >1 pulls the camera further out */
   zoom?: number;
   /** slow orbit used by the menu backdrop */
