@@ -1,3 +1,5 @@
+import { getSettings } from "../settings/SettingsManager";
+
 /**
  * Unified movement input: virtual joystick (touch) + WASD/arrows (desktop).
  * The 3D player controller polls `getMoveVector()` each frame, so input
@@ -49,9 +51,10 @@ export function installKeyboard() {
 
 /** Returns a vector in maze space: x = right, y = "down"/south (+Z). */
 export function getMoveVector(): { x: number; y: number } {
-  let x = joystick.x;
-  let y = joystick.y;
-  if (Math.hypot(x, y) < 0.05) {
+  const sens = getSettings().joystickSensitivity || 1;
+  let x = joystick.x * sens;
+  let y = joystick.y * sens;
+  if (Math.hypot(joystick.x, joystick.y) < 0.05) {
     x = 0;
     y = 0;
     for (const code of keys) {

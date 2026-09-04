@@ -3,7 +3,6 @@ import { bestTime, useProgress } from "@/game/save/SaveManager";
 import { actions, formatTime, useGame } from "@/game/state/gameStore";
 import { STAR_LABEL } from "@/game/progression/scoring";
 import { useEffect, useState } from "react";
-import { Gift } from "lucide-react";
 import { MenuButton, Panel, Screen } from "./ui";
 import { CoinChip, XpBar } from "./economy/Wallet";
 import { RewardBreakdown } from "./economy/RewardBreakdown";
@@ -11,48 +10,29 @@ import { LevelUpBurst } from "./economy/LevelUpBurst";
 import { TOTAL_LEVELS } from "@/game/levels/levels";
 import { Unlock } from "lucide-react";
 
-export function StartScreen() {
-  const unlocked = useProgress((p) => p.unlocked);
-  return (
-    <Screen dim={38}>
-      <Panel>
-        <p className="text-[0.6rem] tracking-[0.5em] text-muted-foreground">A LABYRINTH GAME</p>
-        <h1 className="mt-3 font-display text-4xl tracking-[0.24em] text-foreground">
-          MAZE ESCAPE
-        </h1>
-        <p className="mt-3 text-xs tracking-[0.35em] text-primary">THE ONE WAY OUT</p>
-        <div className="mx-auto mt-6 h-px w-24 bg-border" />
-        <div className="mt-6 space-y-3 rounded-2xl border border-border/50 bg-background/30 p-4">
-          <XpBar />
-          <div className="flex justify-center">
-            <CoinChip compact />
-          </div>
-        </div>
-        <div className="mt-7 space-y-3">
-          <MenuButton onClick={() => actions.startLevel(Math.max(1, unlocked))}>PLAY</MenuButton>
-          <MenuButton variant="ghost" onClick={actions.showLevels}>
-            LEVEL MAP
-          </MenuButton>
-          <MenuButton variant="ghost" onClick={actions.showDaily}>
-            <span className="flex items-center justify-center gap-2">
-              <Gift className="size-4 text-[#e0bd6b]" />
-              DAILY REWARD
-            </span>
-          </MenuButton>
-          <MenuButton variant="ghost" onClick={actions.showSettings}>
-            SETTINGS
-          </MenuButton>
-        </div>
-        <p className="mt-6 text-xs text-muted-foreground">
-          Every gate looks the same. Only one opens.
-        </p>
-      </Panel>
-    </Screen>
-  );
-}
-
 export function PauseScreen() {
   const level = useGame((s) => s.level);
+  const confirmRestart = useGame((s) => s.confirmRestart);
+
+  if (confirmRestart) {
+    return (
+      <Screen dim={65}>
+        <Panel>
+          <h2 className="font-display text-xl tracking-[0.28em]">RESTART LEVEL?</h2>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Your current attempt will be lost. Coins, XP, stars, best time and best score are kept.
+          </p>
+          <div className="mt-7 space-y-3">
+            <MenuButton variant="ghost" onClick={actions.cancelRestart}>
+              CANCEL
+            </MenuButton>
+            <MenuButton onClick={actions.restart}>RESTART</MenuButton>
+          </div>
+        </Panel>
+      </Screen>
+    );
+  }
+
   return (
     <Screen dim={55}>
       <Panel>
@@ -62,16 +42,22 @@ export function PauseScreen() {
         </p>
         <div className="mt-8 space-y-3">
           <MenuButton onClick={actions.resume}>RESUME</MenuButton>
-          <MenuButton variant="ghost" onClick={actions.restart}>
+          <MenuButton variant="ghost" onClick={actions.askRestart}>
             RESTART LEVEL
           </MenuButton>
           <MenuButton variant="ghost" onClick={actions.showLevels}>
             LEVEL MAP
           </MenuButton>
+          <MenuButton variant="ghost" onClick={() => actions.showSettings("paused")}>
+            SETTINGS
+          </MenuButton>
           <MenuButton variant="ghost" onClick={actions.mainMenu}>
             MAIN MENU
           </MenuButton>
         </div>
+        <p className="mt-6 text-[0.6rem] text-muted-foreground">
+          Your attempt is safe while paused.
+        </p>
       </Panel>
     </Screen>
   );

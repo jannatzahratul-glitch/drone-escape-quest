@@ -65,6 +65,12 @@ export interface GameState {
   levelUp: number | null;
   /** level id that just became playable — drives the "LEVEL UNLOCKED" beat */
   unlockedFlash: number | null;
+  /** screen the settings sheet should return to */
+  settingsFrom: GamePhase;
+  /** the "RESTART LEVEL?" confirmation is open */
+  confirmRestart: boolean;
+  /** a run left running in the background (main menu "CONTINUE") */
+  suspended: { level: number; runKey: number } | null;
 }
 
 const RUN_DEFAULTS = {
@@ -91,6 +97,7 @@ const RUN_DEFAULTS = {
   rewards: null,
   levelUp: null,
   unlockedFlash: null,
+  confirmRestart: false,
 };
 
 let state: GameState = {
@@ -98,6 +105,8 @@ let state: GameState = {
   level: 1,
   runKey: 0,
   segmentStart: 0,
+  settingsFrom: "menu",
+  suspended: null,
   ...RUN_DEFAULTS,
 };
 
@@ -132,17 +141,27 @@ export const hintsLeft = (s: GameState = state) =>
 
 export const actions = {
   startLevel(level: number) {
+    const safe = Math.min(TOTAL_LEVELS, Math.max(1, Math.round(level) || 1));
     set({
       phase: "playing",
-      level,
+      level: safe,
       runKey: state.runKey + 1,
       segmentStart: Date.now(),
+      suspended: null,
       ...RUN_DEFAULTS,
       notice: { text: "Explore the maze.", at: Date.now(), tone: "info" },
     });
   },
   restart() {
     actions.startLevel(state.level);
+  },
+  /** open the "your current attempt will be lost" confirmation */
+  askRestart() {
+    if (state.phase !== "paused") return;
+    set({ confirmRestart: true });
+  },
+  cancelRestart() {
+    if (state.confirmRestart) set({ confirmRestart: false });
   },
   nextLevel() {
     const next = state.level + 1;
@@ -158,7 +177,16 @@ export const actions = {
   },
   resume() {
     if (state.phase !== "paused") return;
-    set({ phase: "playing", segmentStart: Date.now() });
+    set({ phase: "playing", segmentStart: Date.now(), confirmRestart: false });
+  },
+  /** resume a run that was left behind when the player went to the main menu */
+  continueRun() {
+    const s = state.suspended;
+    if (!s || s.runKey !== state.runKey || s.level !== state.level) {
+      actions.showLevels();
+      return;
+    }
+    set({ phase: "paused", suspended: null, confirmRestart: false });
   },
   setPlayerCell(cell: { x: number; y: number }) {
     const p = state.playerCell;
@@ -310,21 +338,53 @@ export const actions = {
     if (state.levelUp !== null) set({ levelUp: null });
   },
   showDaily() {
-    set({ phase: "daily", segmentStart: 0, notice: null });
+    set({ phase: "daily", segmentStart: 0, notice: null, confirmRestart: false });
   },
   showLevels() {
-    set({ phase: "levels", segmentStart: 0, notice: null });
+    // leaving gameplay for the map abandons the attempt (progress is already saved)
+    set({
+      phase: "levels",
+      segmentStart: 0,
+      notice: null,
+      suspended: null,
+      confirmRestart: false,
+      cluePanelOpen: false,
+    });
   },
-  showSettings() {
-    set({ phase: "settings", segmentStart: 0, notice: null });
+  /** `from` lets BACK return to the pause menu instead of the main menu */
+  showSettings(from: GamePhase = "menu") {
+    const origin = from === "settings" ? state.settingsFrom : from;
+    set({
+      phase: "settings",
+      settingsFrom: origin,
+      segmentStart: 0,
+      notice: null,
+      confirmRestart: false,
+    });
+  },
+  closeSettings() {
+    const back = state.settingsFrom;
+    if (back === "paused" && state.suspended === null && state.runKey > 0) {
+      set({ phase: "paused", segmentStart: 0, notice: null });
+      return;
+    }
+    if (back === "levels") {
+      actions.showLevels();
+      return;
+    }
+    actions.mainMenu();
   },
   mainMenu() {
+    // a live run is kept in memory so the menu can offer CONTINUE
+    const inRun = state.phase === "playing" || state.phase === "paused";
     set({
       phase: "menu",
       segmentStart: 0,
-      accumulatedMs: 0,
+      accumulatedMs: inRun ? getElapsedMs() : 0,
+      suspended: inRun ? { level: state.level, runKey: state.runKey } : null,
       notice: null,
       openGateId: null,
+      confirmRestart: false,
       cluePanelOpen: false,
     });
   },

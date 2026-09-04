@@ -42,6 +42,7 @@ export function GameScene({
   onLeaveGate,
 }: GameSceneProps) {
   const graphics = useSettings((s) => s.graphics);
+  const cameraSensitivity = useSettings((s) => s.cameraSensitivity);
   const quality = QUALITY[graphics] ?? getQuality();
   const build = useMemo(() => buildLevel(level), [level]);
   const maze = build.maze;
@@ -166,7 +167,7 @@ export function GameScene({
         motion={cinematic ? undefined : motion.current}
         cinematic={cinematic}
         focus={openGateId !== null}
-        zoom={cinematic ? 0.85 : 1}
+        zoom={(cinematic ? 0.85 : 1) / cameraSensitivity}
       />
     </Canvas>
   );
