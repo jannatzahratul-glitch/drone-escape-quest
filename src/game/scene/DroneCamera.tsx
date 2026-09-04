@@ -42,13 +42,20 @@ export function DroneCamera({
   const rig = useMemo(() => {
     const span = Math.max(maze.width, maze.height) * CELL_SIZE;
     const portrait = size.height > size.width;
-    // bigger mazes get proportionally less altitude so the player stays legible
-    const scale = portrait ? 0.9 : 0.58;
-    const height = Math.max(20, Math.min(span * scale, 34 + span * 0.28));
+    const aspect = Math.max(0.3, size.width / Math.max(1, size.height));
+    const tan = Math.tan((45 / 2) * (Math.PI / 180)); // matches Canvas fov
+    // altitude is derived from how many maze cells must stay on screen, so the
+    // framing reads the same on a narrow phone and a wide desktop
+    const cellsAcross = portrait ? 9 : 13;
+    const fromWidth = (cellsAcross * CELL_SIZE) / (2 * tan * aspect);
+    // never pull so far back that the void around the maze dominates
+    const cap = ((maze.height + 4) * CELL_SIZE) / (2 * tan);
+    const height = Math.max(24, Math.min(fromWidth, cap));
     const halfW = (maze.width * CELL_SIZE) / 2;
     const halfH = (maze.height * CELL_SIZE) / 2;
-    return { height, back: height * 0.42, span, halfW, halfH };
+    return { height, back: height * 0.34, span, halfW, halfH };
   }, [maze, size.width, size.height]);
+
 
   useFrame((state, rawDelta) => {
     const delta = Math.min(rawDelta, 0.05);
