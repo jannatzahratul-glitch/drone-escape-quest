@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
-import { saveActions } from "../save/SaveManager";
+import { saveActions, getProgress } from "../save/SaveManager";
 import { buildLevel } from "../levels/levelBuilder";
-import { getLevelConfig } from "../levels/levels";
+import { getLevelConfig, TOTAL_LEVELS } from "../levels/levels";
 import { rateRun, type RunResult } from "../progression/scoring";
 import { nextHint } from "../hints/hints";
 import type { Clue } from "../clues/clueSystem";
@@ -63,6 +63,8 @@ export interface GameState {
   rewards: CompletionRewards | null;
   /** set while the "LEVEL UP" beat plays over the results */
   levelUp: number | null;
+  /** level id that just became playable — drives the "LEVEL UNLOCKED" beat */
+  unlockedFlash: number | null;
 }
 
 const RUN_DEFAULTS = {
@@ -88,6 +90,7 @@ const RUN_DEFAULTS = {
   xp: 0,
   rewards: null,
   levelUp: null,
+  unlockedFlash: null,
 };
 
 let state: GameState = {
@@ -142,7 +145,12 @@ export const actions = {
     actions.startLevel(state.level);
   },
   nextLevel() {
-    actions.startLevel(state.level + 1);
+    const next = state.level + 1;
+    if (next > TOTAL_LEVELS) {
+      actions.showLevels();
+      return;
+    }
+    actions.startLevel(next);
   },
   pause() {
     if (state.phase !== "playing") return;
@@ -269,6 +277,7 @@ export const actions = {
         secretsFound: state.secretsFound.length,
       });
       const firstCompletion = !isCompleted(state.level);
+      const unlockedBefore = getProgress().unlocked;
       const isNewBest = saveActions.completeLevel(state.level, {
         timeMs: finalMs,
         stars: result.stars,
@@ -288,9 +297,14 @@ export const actions = {
         result,
         rewards,
         levelUp: rewards.leveledUp ? rewards.levelAfter : null,
+        unlockedFlash:
+          getProgress().unlocked > unlockedBefore ? getProgress().unlocked : null,
         bestMs: Math.min(finalMs, state.bestMs ?? finalMs),
       });
     }, 1700);
+  },
+  clearUnlockedFlash() {
+    if (state.unlockedFlash !== null) set({ unlockedFlash: null });
   },
   clearLevelUp() {
     if (state.levelUp !== null) set({ levelUp: null });
