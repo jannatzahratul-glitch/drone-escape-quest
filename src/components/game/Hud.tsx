@@ -26,6 +26,7 @@ export function Hud() {
   const panelOpen = useGame((s) => s.cluePanelOpen);
   const nearGate = useGame((s) => s.nearGate);
   const hints = useGame((s) => hintsLeft(s));
+  const penaltyFlash = useGame((s) => s.penaltyFlash);
   const [time, setTime] = useState(0);
 
   const clueTotal = buildLevel(level).clues.length;
@@ -155,6 +156,13 @@ export function Hud() {
           </div>
         </div>
       </div>
+
+      {penaltyFlash > 0 && (
+        <div
+          key={penaltyFlash}
+          className="animate-out fade-out pointer-events-none absolute inset-0 bg-background/85 duration-1000 fill-mode-forwards"
+        />
+      )}
 
       {panelOpen && <CluePanel />}
     </>
