@@ -34,6 +34,8 @@ export interface GameState {
   level: number;
   /** bumped on every (re)start so the 3D scene remounts cleanly */
   runKey: number;
+  /** wall-clock start of the current attempt — unique reward id per run */
+  runStartedAt: number;
   accumulatedMs: number;
   segmentStart: number;
   finalMs: number;
@@ -105,6 +107,7 @@ let state: GameState = {
   phase: "menu",
   level: 1,
   runKey: 0,
+  runStartedAt: 0,
   segmentStart: 0,
   settingsFrom: "menu",
   suspended: null,
@@ -147,6 +150,7 @@ export const actions = {
       phase: "playing",
       level: safe,
       runKey: state.runKey + 1,
+      runStartedAt: Date.now(),
       segmentStart: Date.now(),
       suspended: null,
       ...RUN_DEFAULTS,
@@ -316,7 +320,7 @@ export const actions = {
       });
       const rewards = grantCompletion(
         state.level,
-        `${state.level}:${state.runKey}`,
+        `${state.level}:${state.runStartedAt}:${state.runKey}`,
         result,
         firstCompletion,
       );

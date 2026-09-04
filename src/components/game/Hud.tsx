@@ -28,7 +28,8 @@ export function Hud() {
   const nearGate = useGame((s) => s.nearGate);
   const hints = useGame((s) => hintsLeft(s));
   const penaltyFlash = useGame((s) => s.penaltyFlash);
-  const [time, setTime] = useState(0);
+  // seed from live state so a resumed run never flashes 00:00 for one tick
+  const [time, setTime] = useState(() => getElapsedMs(getState()));
 
   const clueTotal = buildLevel(level).clues.length;
 

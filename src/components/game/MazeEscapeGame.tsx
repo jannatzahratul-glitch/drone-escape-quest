@@ -12,6 +12,7 @@ import { EscapingOverlay, LevelCompleteScreen, PauseScreen } from "./Overlays";
 import { MainMenu } from "./MainMenu";
 import { MenuBackdrop } from "./MenuBackdrop";
 import { LoadingScreen } from "./LoadingScreen";
+import { SceneBoundary } from "./SceneBoundary";
 import { LevelMapScreen } from "./map/LevelMap";
 import { SettingsScreen } from "./SettingsScreen";
 import { DailyRewardScreen } from "./economy/DailyRewardScreen";
@@ -87,18 +88,20 @@ export function MazeEscapeGame() {
   return (
     <main className="fixed inset-0 overflow-hidden bg-background">
       {keepScene ? (
-        <Suspense fallback={<LoadingScreen />}>
-          <GameScene
-            key={`run-${runKey}`}
-            level={level}
-            paused={phase !== "playing"}
-            openGateId={openGateId}
-            onGate={handleGate}
-            onLeaveGate={() => {
-              /* the warning fades on its own timer */
-            }}
-          />
-        </Suspense>
+        <SceneBoundary>
+          <Suspense fallback={<LoadingScreen />}>
+            <GameScene
+              key={`run-${runKey}`}
+              level={level}
+              paused={phase !== "playing"}
+              openGateId={openGateId}
+              onGate={handleGate}
+              onLeaveGate={() => {
+                /* the warning fades on its own timer */
+              }}
+            />
+          </Suspense>
+        </SceneBoundary>
       ) : (
         <MenuBackdrop />
       )}
