@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { playCue } from "@/game/audio/AudioManager";
+import { haptics } from "@/game/haptics/HapticManager";
 
 /** Shared dark-glass UI primitives used by every screen. */
 export function Panel({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
@@ -17,10 +18,15 @@ export function Panel({ children, wide = false }: { children: ReactNode; wide?: 
 export function Screen({ children, dim = 45 }: { children: ReactNode; dim?: number }) {
   return (
     <div
-      className="absolute inset-0 flex items-center justify-center overflow-y-auto p-5 backdrop-blur-[6px]"
-      style={{ background: `color-mix(in oklab, var(--background) ${dim}%, transparent)` }}
+      className="absolute inset-0 overflow-y-auto overscroll-contain backdrop-blur-[6px]"
+      style={{
+        background: `color-mix(in oklab, var(--background) ${dim}%, transparent)`,
+        padding:
+          "max(1.25rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left))",
+      }}
     >
-      {children}
+      {/* min-h-full keeps short panels centred while tall panels stay scrollable */}
+      <div className="flex min-h-full w-full items-center justify-center">{children}</div>
     </div>
   );
 }
@@ -37,7 +43,7 @@ export function MenuButton({
   disabled?: boolean;
 }) {
   const base =
-    "w-full rounded-2xl px-6 py-3.5 font-display text-sm tracking-[0.22em] transition-all duration-200 active:scale-[0.97] disabled:opacity-40";
+    "w-full min-h-13 rounded-2xl px-6 py-3.5 font-display text-sm tracking-[0.22em] transition-all duration-200 active:scale-[0.97] disabled:opacity-40";
   const styles =
     variant === "primary"
       ? "bg-primary text-primary-foreground shadow-[0_0_30px_-8px_var(--primary)] hover:brightness-110"
@@ -46,7 +52,8 @@ export function MenuButton({
     <button
       disabled={disabled}
       onClick={() => {
-        playCue("ui");
+        playCue("button");
+        haptics.light();
         onClick();
       }}
       className={`${base} ${styles}`}

@@ -28,11 +28,15 @@ export function buildLevel(level: number): LevelBuild {
   let build: LevelBuild | null = null;
 
   for (let attempt = 0; attempt < 12 && !build; attempt++) {
-    const maze = generateMaze({ ...config.maze, seed: config.maze.seed + attempt * 101 });
-    const gates = assignGateSymbols(maze, config.maze.seed + attempt);
-    const clues = buildClues(maze, gates, config.difficulty.cluePlan, config.maze.seed + attempt);
-    if (validate(maze, gates, clues)) {
-      build = { level, maze, gates, clues, hidden: pickHidden(maze, clues) };
+    try {
+      const maze = generateMaze({ ...config.maze, seed: config.maze.seed + attempt * 101 });
+      const gates = assignGateSymbols(maze, config.maze.seed + attempt);
+      const clues = buildClues(maze, gates, config.difficulty.cluePlan, config.maze.seed + attempt);
+      if (validate(maze, gates, clues)) {
+        build = { level, maze, gates, clues, hidden: pickHidden(maze, clues) };
+      }
+    } catch {
+      // a bad seed can never strand the player — try the next one
     }
   }
 

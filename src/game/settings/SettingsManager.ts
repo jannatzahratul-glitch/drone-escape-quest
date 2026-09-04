@@ -1,22 +1,69 @@
 import { useSyncExternalStore } from "react";
 
 /**
- * SettingsManager — sound / music / vibration / graphics quality.
+ * SettingsManager — audio, haptics, gameplay feel and graphics quality.
  * Graphics quality drives shadow resolution, particle counts, texture size
  * and pixel ratio so the game can scale down on weaker phones.
+ *
+ * All fields are merged over DEFAULTS on load, so saves written by older
+ * builds keep working and only gain the new fields.
  */
 export type GraphicsQuality = "low" | "medium" | "high";
 
 export interface Settings {
   sound: boolean;
   music: boolean;
+  /** haptic feedback (kept under the original key for save compatibility) */
   vibration: boolean;
   graphics: GraphicsQuality;
+  /** 0..1 */
+  masterVolume: number;
+  musicVolume: number;
+  sfxVolume: number;
+  /** 0.5..1.5 */
+  cameraSensitivity: number;
+  joystickSensitivity: number;
+  /** show contextual hint prompts / tutorial nudges */
+  hintPrompts: boolean;
 }
 
 const KEY = "maze-escape:settings:v1";
 
-const DEFAULTS: Settings = { sound: true, music: true, vibration: true, graphics: "medium" };
+const DEFAULTS: Settings = {
+  sound: true,
+  music: true,
+  vibration: true,
+  graphics: "medium",
+  masterVolume: 0.8,
+  musicVolume: 0.5,
+  sfxVolume: 0.9,
+  cameraSensitivity: 1,
+  joystickSensitivity: 1,
+  hintPrompts: true,
+};
+
+const clampN = (n: number, lo = 0, hi = 1) =>
+  Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo;
+
+/** Repairs partial / corrupted saves without ever throwing. */
+function sanitize(raw: Partial<Settings>): Settings {
+  const s = { ...DEFAULTS, ...raw };
+  return {
+    ...s,
+    sound: !!s.sound,
+    music: !!s.music,
+    vibration: !!s.vibration,
+    hintPrompts: s.hintPrompts !== false,
+    graphics: (["low", "medium", "high"] as GraphicsQuality[]).includes(s.graphics)
+      ? s.graphics
+      : "medium",
+    masterVolume: clampN(Number(s.masterVolume)),
+    musicVolume: clampN(Number(s.musicVolume)),
+    sfxVolume: clampN(Number(s.sfxVolume)),
+    cameraSensitivity: clampN(Number(s.cameraSensitivity), 0.5, 1.5),
+    joystickSensitivity: clampN(Number(s.joystickSensitivity), 0.5, 1.5),
+  };
+}
 
 let settings: Settings = DEFAULTS;
 let loaded = false;
@@ -25,14 +72,15 @@ const listeners = new Set<() => void>();
 export function loadSettings() {
   if (loaded || typeof window === "undefined") return settings;
   loaded = true;
+  let stored: string | null = null;
   try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) settings = { ...DEFAULTS, ...(JSON.parse(raw) as Partial<Settings>) };
+    stored = localStorage.getItem(KEY);
+    settings = sanitize(stored ? (JSON.parse(stored) as Partial<Settings>) : {});
   } catch {
     settings = DEFAULTS;
   }
   // auto-downgrade on low-core devices unless the player already chose
-  if (!localStorage.getItem(KEY) && (navigator.hardwareConcurrency ?? 4) <= 4) {
+  if (!stored && (navigator.hardwareConcurrency ?? 4) <= 4) {
     settings = { ...settings, graphics: "low" };
   }
   listeners.forEach((l) => l());
@@ -108,3 +156,9 @@ export const QUALITY: Record<GraphicsQuality, QualityProfile> = {
 };
 
 export const getQuality = () => QUALITY[settings.graphics];
+
+/** Imperative subscription (used by the AudioManager, outside React). */
+export function subscribeSettings(l: () => void) {
+  listeners.add(l);
+  return () => listeners.delete(l);
+}
