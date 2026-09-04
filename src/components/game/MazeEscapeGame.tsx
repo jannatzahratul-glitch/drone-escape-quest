@@ -12,6 +12,7 @@ import { EscapingOverlay, LevelCompleteScreen, PauseScreen } from "./Overlays";
 import { MainMenu } from "./MainMenu";
 import { MenuBackdrop } from "./MenuBackdrop";
 import { LoadingScreen } from "./LoadingScreen";
+import { SceneBoundary } from "./SceneBoundary";
 import { LevelMapScreen } from "./map/LevelMap";
 import { SettingsScreen } from "./SettingsScreen";
 import { DailyRewardScreen } from "./economy/DailyRewardScreen";
