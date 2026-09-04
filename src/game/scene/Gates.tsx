@@ -4,7 +4,8 @@ import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { CELL_SIZE, WALL_HEIGHT, cellToWorld, type Gate, type Maze } from "../maze/generator";
 import type { QualityProfile } from "../settings/SettingsManager";
-import { createDoorTextures } from "./textures";
+import { createDoorTextures, createSymbolTexture } from "./textures";
+import { SYMBOLS, type GateInfo } from "../clues/clueSystem";
 
 /**
  * GateManager (view layer)
@@ -20,9 +21,10 @@ interface ArchProps {
   seed: number;
   quality: QualityProfile;
   doorMap: THREE.Texture;
+  symbolMap: THREE.Texture;
 }
 
-function GateArch({ position, rotation, opened, seed, quality, doorMap }: ArchProps) {
+function GateArch({ position, rotation, opened, seed, quality, doorMap, symbolMap }: ArchProps) {
   const glow = useRef<THREE.PointLight>(null);
   const exitLight = useRef<THREE.PointLight>(null);
   const doorL = useRef<THREE.Group>(null);
@@ -104,6 +106,14 @@ function GateArch({ position, rotation, opened, seed, quality, doorMap }: ArchPr
         <boxGeometry args={[0.5, 0.34, 0.82]} />
         <meshStandardMaterial color="#4f4739" roughness={0.75} metalness={0.12} />
       </mesh>
+      {/* carved symbol on the lintel — every gate wears one, none reveal the exit */}
+      {[1, -1].map((f) => (
+        <mesh key={f} position={[0, pillarH + 0.2, f * 0.46]} rotation-y={f > 0 ? 0 : Math.PI}>
+          <planeGeometry args={[0.34, 0.34]} />
+          <meshBasicMaterial map={symbolMap} transparent toneMapped={false} />
+        </mesh>
+      ))}
+
       {/* carved arch curve under the lintel */}
       <mesh position={[0, pillarH, 0]} rotation-x={Math.PI / 2}>
         <torusGeometry args={[half - 0.1, 0.08, 8, 24, Math.PI]} />
@@ -166,17 +176,25 @@ function GateArch({ position, rotation, opened, seed, quality, doorMap }: ArchPr
 
 export function Gates({
   maze,
+  gates,
   quality,
   openGateId,
 }: {
   maze: Maze;
+  gates: GateInfo[];
   quality: QualityProfile;
   openGateId: number | null;
 }) {
   const door = useMemo(() => createDoorTextures(quality.textureSize), [quality.textureSize]);
+  const symbolMaps = useMemo(() => {
+    const size = Math.min(256, quality.textureSize);
+    const out: Record<string, THREE.Texture> = {};
+    for (const g of gates) out[g.symbol] ??= createSymbolTexture(SYMBOLS[g.symbol].glyph, size);
+    return out;
+  }, [gates, quality.textureSize]);
   return (
     <group>
-      {maze.gates.map((gate: Gate) => {
+      {gates.map((gate: GateInfo) => {
         const [wx, wz] = cellToWorld(maze, gate.x, gate.y);
         const rotation = gate.side === "E" || gate.side === "W" ? Math.PI / 2 : 0;
         return (
@@ -188,6 +206,7 @@ export function Gates({
             seed={gate.id * 2.7}
             quality={quality}
             doorMap={door.map}
+            symbolMap={symbolMaps[gate.symbol]!}
           />
         );
       })}

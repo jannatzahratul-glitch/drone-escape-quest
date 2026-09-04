@@ -12,6 +12,7 @@ import {
   type Maze,
 } from "../maze/generator";
 import type { QualityProfile } from "../settings/SettingsManager";
+import { actions } from "../state/gameStore";
 
 /**
  * PlayerController
@@ -135,6 +136,20 @@ export function Player({
 
     // gate detection (real exit vs fake gate)
     const cell = worldToCell(maze, px, pz);
+    actions.setPlayerCell(cell);
+
+    // proximity prompt — "ENTER" appears near any gate, real or fake
+    let near: number | null = null;
+    let bestD = Infinity;
+    for (const gt of maze.gates) {
+      const [gx, gz] = cellToWorld(maze, gt.x, gt.y);
+      const d = Math.hypot(gx - px, gz - pz);
+      if (d < CELL_SIZE * 1.35 && d < bestD) {
+        bestD = d;
+        near = gt.id;
+      }
+    }
+    actions.setNearGate(near);
     const gate = maze.gates.find((gt) => gt.x === cell.x && gt.y === cell.y);
     if (gate) {
       if (currentGate.current !== gate.id) {

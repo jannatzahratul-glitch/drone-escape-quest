@@ -233,3 +233,25 @@ export function createDoorTextures(size = 256) {
   speckle(ctx, size, 20);
   return { map: finish(canvas) };
 }
+
+/** Glowing carved rune plaque used by clue stones and gate lintels. */
+export function createSymbolTexture(glyph: string, size = 128) {
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const g = c.getContext("2d")!;
+  g.fillStyle = "#151109";
+  g.fillRect(0, 0, size, size);
+  g.strokeStyle = "#3a2f1f";
+  g.lineWidth = size * 0.05;
+  g.strokeRect(size * 0.08, size * 0.08, size * 0.84, size * 0.84);
+  g.shadowColor = "#ffc06a";
+  g.shadowBlur = size * 0.18;
+  g.fillStyle = "#ffcf92";
+  g.font = `${Math.floor(size * 0.6)}px serif`;
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.fillText(glyph, size / 2, size * 0.54);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}

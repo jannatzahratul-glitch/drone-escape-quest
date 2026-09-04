@@ -48,8 +48,8 @@ export function MazeEscapeGame() {
       actions.escape(gate.id);
     } else {
       playCue("gate-locked");
-      vibrate(35);
-      actions.notify("Locked. Not the way out.");
+      vibrate([30, 40, 30]);
+      actions.wrongGate(gate.id);
     }
   };
 

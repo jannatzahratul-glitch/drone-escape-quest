@@ -1,6 +1,7 @@
 import { getLevelConfig, getLevelLabel } from "@/game/levels/levels";
 import { bestTime, useProgress } from "@/game/save/SaveManager";
 import { actions, formatTime, useGame } from "@/game/state/gameStore";
+import { STAR_LABEL } from "@/game/progression/scoring";
 import { MenuButton, Panel, Screen } from "./ui";
 
 export function StartScreen() {
@@ -61,19 +62,37 @@ export function LevelCompleteScreen() {
   const finalMs = useGame((s) => s.finalMs);
   const level = useGame((s) => s.level);
   const isNewBest = useGame((s) => s.isNewBest);
+  const result = useGame((s) => s.result);
   useProgress((p) => p.bestMs[level]);
   const best = bestTime(level) ?? finalMs;
+  const stars = result?.stars ?? 1;
+
+  const Stat = ({ label, value }: { label: string; value: string }) => (
+    <div className="rounded-2xl border border-border/50 bg-background/30 px-2 py-3">
+      <p className="text-[0.5rem] tracking-[0.24em] text-muted-foreground">{label}</p>
+      <p className="mt-1 font-display text-base tabular-nums">{value}</p>
+    </div>
+  );
 
   return (
     <Screen dim={50}>
       <Panel>
-        <div className="mx-auto mb-6 size-16 animate-pulse rounded-full bg-primary/25 ring-4 ring-primary/40" />
         <h2 className="font-display text-2xl tracking-[0.26em] text-primary">LEVEL COMPLETE</h2>
         <p className="mt-2 text-[0.6rem] tracking-[0.3em] text-muted-foreground">
           {getLevelConfig(level).name} · {getLevelConfig(level).subtitle}
         </p>
 
-        <div className="mt-7 grid grid-cols-2 gap-3">
+        <div className="animate-in zoom-in-90 mt-5 duration-500">
+          <p className="font-display text-3xl tracking-[0.2em] text-primary">
+            {"★★★".slice(0, stars)}
+            <span className="text-muted-foreground/40">{"★★★".slice(stars)}</span>
+          </p>
+          <p className="mt-1 text-[0.6rem] tracking-[0.35em] text-muted-foreground">
+            {STAR_LABEL[stars]}
+          </p>
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 gap-3">
           <div className="rounded-2xl border border-border/50 bg-background/30 py-4">
             <p className="text-[0.55rem] tracking-[0.3em] text-muted-foreground">TIME</p>
             <p className="font-display text-2xl tabular-nums">{formatTime(finalMs)}</p>
@@ -83,17 +102,28 @@ export function LevelCompleteScreen() {
             <p className="font-display text-2xl tabular-nums text-primary">{formatTime(best)}</p>
           </div>
         </div>
+
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <Stat label="CLUES" value={`${result?.cluesFound ?? 0}/${result?.cluesTotal ?? 0}`} />
+          <Stat label="HINTS" value={String(result?.hintsUsed ?? 0)} />
+          <Stat label="WRONG GATES" value={String(result?.wrongGates ?? 0)} />
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <Stat label="SCORE" value={String(result?.score ?? 0)} />
+          <Stat label="XP EARNED" value={`+${result?.xp ?? 0}`} />
+        </div>
+
         {isNewBest && (
           <p className="mt-3 text-[0.6rem] tracking-[0.3em] text-primary">NEW RECORD</p>
         )}
 
         <div className="mt-7 space-y-3">
           <MenuButton onClick={actions.nextLevel}>NEXT LEVEL</MenuButton>
-          <MenuButton variant="ghost" onClick={actions.showLevels}>
-            LEVEL SELECT
+          <MenuButton variant="ghost" onClick={actions.restart}>
+            RETRY
           </MenuButton>
-          <MenuButton variant="ghost" onClick={actions.mainMenu}>
-            MAIN MENU
+          <MenuButton variant="ghost" onClick={actions.showLevels}>
+            LEVELS
           </MenuButton>
         </div>
       </Panel>

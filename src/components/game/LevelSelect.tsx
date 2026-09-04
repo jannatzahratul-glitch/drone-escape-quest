@@ -9,6 +9,8 @@ export function LevelSelectScreen() {
   const unlocked = useProgress((p) => p.unlocked);
   const completed = useProgress((p) => p.completed);
   const bestMs = useProgress((p) => p.bestMs);
+  const stars = useProgress((p) => p.stars);
+  const xp = useProgress((p) => p.xp);
 
   const levels = Array.from({ length: TOTAL_LEVELS }, (_, i) => i + 1);
 
@@ -18,7 +20,7 @@ export function LevelSelectScreen() {
         <div className="text-center">
           <h2 className="font-display text-2xl tracking-[0.3em]">LEVELS</h2>
           <p className="mt-2 text-[0.6rem] tracking-[0.35em] text-muted-foreground">
-            {completed.length} / {TOTAL_LEVELS} ESCAPED
+            {completed.length} / {TOTAL_LEVELS} ESCAPED · {xp} XP
           </p>
         </div>
 
@@ -58,7 +60,10 @@ export function LevelSelectScreen() {
                 <p className="mt-1 truncate text-[0.6rem] tracking-[0.14em] text-foreground/70">
                   {locked ? "LOCKED" : cfg.subtitle}
                 </p>
-                <p className="mt-2 text-[0.6rem] tabular-nums text-primary">
+                <p className="mt-2 text-xs tracking-[0.2em] text-primary">
+                  {locked ? "\u00a0" : "★★★".slice(0, stars[id] ?? 0) || "\u00a0"}
+                </p>
+                <p className="mt-1 text-[0.6rem] tabular-nums text-primary">
                   {best !== undefined ? `BEST ${formatTime(best)}` : "\u00a0"}
                 </p>
               </button>

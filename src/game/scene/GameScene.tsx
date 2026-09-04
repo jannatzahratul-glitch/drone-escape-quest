@@ -3,7 +3,10 @@ import { Canvas } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
 import { Suspense, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { CELL_SIZE, cellToWorld, generateMaze, type Gate } from "../maze/generator";
+import { CELL_SIZE, cellToWorld, type Gate } from "../maze/generator";
+import { buildLevel } from "../levels/levelBuilder";
+import { Clues } from "./Clues";
+import { useGame } from "../state/gameStore";
 import { getLevelConfig } from "../levels/levels";
 import { setJoystick } from "../input/input";
 import { getQuality, useSettings, QUALITY } from "../settings/SettingsManager";
@@ -40,7 +43,11 @@ export function GameScene({
 }: GameSceneProps) {
   const graphics = useSettings((s) => s.graphics);
   const quality = QUALITY[graphics] ?? getQuality();
-  const maze = useMemo(() => generateMaze(getLevelConfig(level).maze), [level]);
+  const build = useMemo(() => buildLevel(level), [level]);
+  const maze = build.maze;
+  const fogStrength = getLevelConfig(level).difficulty.fogStrength;
+  const discovered = useGame((s) => s.discoveredClueIds);
+  const secrets = useGame((s) => s.secretsFound);
   const tracker = useRef(
     new THREE.Vector3(
       ...(() => {
@@ -57,6 +64,8 @@ export function GameScene({
   if (import.meta.env.DEV && typeof window !== "undefined") {
     (window as unknown as Record<string, unknown>)["__mazeDebug"] = {
       maze,
+      clues: build.clues,
+      hidden: build.hidden,
       tracker: tracker.current,
       setJoystick,
     };
@@ -73,7 +82,11 @@ export function GameScene({
       <color attach="background" args={["#08080b"]} />
       <fog
         attach="fog"
-        args={["#0c0b10", span * (cinematic ? 1.5 : 0.85 * quality.fogTightness), span * (cinematic ? 3.2 : 2.3)]}
+        args={[
+          "#0c0b10",
+          span * (cinematic ? 1.5 : (0.85 - fogStrength * 0.45) * quality.fogTightness),
+          span * (cinematic ? 3.2 : 2.3 - fogStrength * 1.1),
+        ]}
       />
 
       <ambientLight intensity={cinematic ? 1.5 : 0.95} color="#8fa2c4" />
@@ -120,8 +133,20 @@ export function GameScene({
         </Environment>
 
         <MazeMesh maze={maze} quality={quality} />
-        <Gates maze={maze} quality={quality} openGateId={openGateId} />
+        <Gates maze={maze} gates={build.gates} quality={quality} openGateId={openGateId} />
         <Torches maze={maze} quality={quality} />
+        {!cinematic && (
+          <Clues
+            maze={maze}
+            clues={build.clues}
+            hidden={build.hidden}
+            tracker={tracker.current}
+            quality={quality}
+            discovered={discovered}
+            secrets={secrets}
+            active={!paused}
+          />
+        )}
         {!cinematic && (
           <Player
             maze={maze}
