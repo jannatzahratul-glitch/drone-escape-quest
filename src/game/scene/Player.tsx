@@ -75,8 +75,8 @@ export function Player({
   // Dev-only teleport used by automated gameplay tests.
   if (import.meta.env.DEV && typeof window !== "undefined") {
     (window as unknown as Record<string, unknown>)["__mazeWarp"] = (x: number, y: number) => {
-      const w = cellToWorld(maze, x, y);
-      group.current?.position.set(w.x, 0, w.z);
+      const [wx, wz] = cellToWorld(maze, x, y);
+      group.current?.position.set(wx, 0, wz);
       currentGate.current = null;
     };
   }
