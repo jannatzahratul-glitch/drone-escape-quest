@@ -6,6 +6,8 @@ import * as THREE from "three";
 import { CELL_SIZE, cellToWorld, generateMaze, type Gate } from "../maze/generator";
 import { getLevelConfig } from "../levels/levels";
 import { DroneCamera } from "./DroneCamera";
+
+const MAZE_CENTER = new THREE.Vector3(0, 0, 0);
 import { Gates } from "./Gates";
 import { MazeMesh } from "./MazeMesh";
 import { Player } from "./Player";
@@ -54,11 +56,11 @@ export function GameScene({
       <color attach="background" args={["#0a0a0d"]} />
       <fog attach="fog" args={["#0d0c10", span * 0.55, span * 1.5]} />
 
-      <ambientLight intensity={0.35} color="#8fa2c8" />
-      <hemisphereLight args={["#4b5a7a", "#241d17", 0.5]} />
+      <ambientLight intensity={0.6} color="#9fb0d0" />
+      <hemisphereLight args={["#5d6e92", "#2c2319", 0.8]} />
       <directionalLight
         position={[span * 0.4, span * 0.9, span * 0.35]}
-        intensity={1.5}
+        intensity={2.1}
         color="#ffe7c4"
         castShadow
         shadow-mapSize-width={1024}
@@ -99,9 +101,9 @@ export function GameScene({
 
       <DroneCamera
         maze={maze}
-        target={tracker.current}
+        target={cinematic ? MAZE_CENTER : tracker.current}
         cinematic={cinematic}
-        zoom={cinematic ? 1.25 : 1}
+        zoom={cinematic ? 1.9 : 1}
       />
     </Canvas>
   );
