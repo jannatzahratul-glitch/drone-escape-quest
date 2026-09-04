@@ -37,7 +37,7 @@ export function computeCompletionRewards(
     coinLines.push({ label: "First Completion", value: ECONOMY.coins.firstCompletion });
   }
   if (result.secretsFound > 0) {
-    const per = ECONOMY.coins.cacheByTier[tier] ?? ECONOMY.coins.cacheByTier.medium!;
+    const per = ECONOMY.coins.cacheByTier[tier] ?? ECONOMY.coins.cacheByTier['medium']!;
     coinLines.push({ label: "Exploration", value: result.secretsFound * per });
   }
   if (result.hintsUsed === 0) {
