@@ -1,11 +1,17 @@
 import { useSyncExternalStore } from "react";
 import { saveActions } from "../save/SaveManager";
+import { buildLevel } from "../levels/levelBuilder";
+import { getLevelConfig } from "../levels/levels";
+import { rateRun, type RunResult } from "../progression/scoring";
+import { nextHint } from "../hints/hints";
+import type { Clue } from "../clues/clueSystem";
 
 /**
  * Modular game-state manager.
  *
  * A tiny external store (no provider needed) so both the 3D scene and the DOM
- * HUD read the same state.
+ * HUD read the same state. It also owns the run-scoped exploration state:
+ * discovered clues, hints used, wrong gates and XP.
  */
 export type GamePhase =
   | "menu"
@@ -28,20 +34,50 @@ export interface GameState {
   isNewBest: boolean;
   /** id of the gate currently opening (real exit) */
   openGateId: number | null;
-  notice: { text: string; at: number } | null;
+  notice: { text: string; at: number; tone: "info" | "warn" | "reward" } | null;
+  /** clue discovered a moment ago — shown as a card, then dismissed */
+  clueFlash: Clue | null;
+  discoveredClueIds: number[];
+  secretsFound: number[];
+  hintsUsed: number;
+  hintText: string | null;
+  wrongGates: number;
+  visitedGates: number[];
+  cluePanelOpen: boolean;
+  playerCell: { x: number; y: number } | null;
+  /** brief darkening pulse after a wrong gate on harder levels */
+  penaltyFlash: number;
+  result: RunResult | null;
+  xp: number;
 }
 
-let state: GameState = {
-  phase: "menu",
-  level: 1,
-  runKey: 0,
+const RUN_DEFAULTS = {
   accumulatedMs: 0,
-  segmentStart: 0,
   finalMs: 0,
   bestMs: null,
   isNewBest: false,
   openGateId: null,
   notice: null,
+  clueFlash: null,
+  discoveredClueIds: [] as number[],
+  secretsFound: [] as number[],
+  hintsUsed: 0,
+  hintText: null,
+  wrongGates: 0,
+  visitedGates: [] as number[],
+  cluePanelOpen: false,
+  playerCell: null,
+  penaltyFlash: 0,
+  result: null,
+  xp: 0,
+};
+
+let state: GameState = {
+  phase: "menu",
+  level: 1,
+  runKey: 0,
+  segmentStart: 0,
+  ...RUN_DEFAULTS,
 };
 
 const listeners = new Set<() => void>();
@@ -70,19 +106,18 @@ export function getElapsedMs(s: GameState = state) {
   return s.accumulatedMs + (s.segmentStart ? Date.now() - s.segmentStart : 0);
 }
 
+export const hintsLeft = (s: GameState = state) =>
+  Math.max(0, getLevelConfig(s.level).difficulty.hintLimit - s.hintsUsed);
+
 export const actions = {
   startLevel(level: number) {
     set({
       phase: "playing",
       level,
       runKey: state.runKey + 1,
-      accumulatedMs: 0,
       segmentStart: Date.now(),
-      finalMs: 0,
-      bestMs: null,
-      isNewBest: false,
-      openGateId: null,
-      notice: null,
+      ...RUN_DEFAULTS,
+      notice: { text: "Explore the maze.", at: Date.now(), tone: "info" },
     });
   },
   restart() {
@@ -99,6 +134,77 @@ export const actions = {
     if (state.phase !== "paused") return;
     set({ phase: "playing", segmentStart: Date.now() });
   },
+  setPlayerCell(cell: { x: number; y: number }) {
+    const p = state.playerCell;
+    if (p && p.x === cell.x && p.y === cell.y) return;
+    set({ playerCell: cell });
+  },
+
+  /** a carved stone was reached */
+  discoverClue(clue: Clue) {
+    if (state.discoveredClueIds.includes(clue.id)) return;
+    const first = state.discoveredClueIds.length === 0;
+    set({
+      discoveredClueIds: [...state.discoveredClueIds, clue.id],
+      clueFlash: clue,
+      xp: state.xp + clue.xp,
+      notice: {
+        text: first ? "Somewhere in this maze is the way out." : `+${clue.xp} XP`,
+        at: Date.now(),
+        tone: "reward",
+      },
+    });
+    saveActions.recordClues(state.level, [clue.id]);
+  },
+  clearClueFlash() {
+    if (state.clueFlash) set({ clueFlash: null });
+  },
+  discoverSecret(index: number) {
+    if (state.secretsFound.includes(index)) return;
+    set({
+      secretsFound: [...state.secretsFound, index],
+      xp: state.xp + 15,
+      notice: { text: "EXPLORATION FOUND · +15 XP", at: Date.now(), tone: "reward" },
+    });
+  },
+
+  toggleCluePanel() {
+    set({ cluePanelOpen: !state.cluePanelOpen, hintText: null });
+  },
+  useHint() {
+    if (state.phase !== "playing" || hintsLeft() <= 0) return;
+    const text = nextHint({
+      level: state.level,
+      discoveredClueIds: state.discoveredClueIds,
+      wrongGates: state.wrongGates,
+      playerCell: state.playerCell,
+      visitedGates: state.visitedGates,
+    });
+    set({ hintsUsed: state.hintsUsed + 1, hintText: text });
+  },
+  clearHint() {
+    if (state.hintText) set({ hintText: null });
+  },
+
+  /** player stood in a gate that is not the exit */
+  wrongGate(gateId: number) {
+    if (state.phase !== "playing") return;
+    const penalty = getLevelConfig(state.level).difficulty.penalty;
+    const alreadyTried = state.visitedGates.includes(gateId);
+    set({
+      wrongGates: state.wrongGates + 1,
+      visitedGates: alreadyTried ? state.visitedGates : [...state.visitedGates, gateId],
+      accumulatedMs: getElapsedMs() + penalty.timeMs,
+      segmentStart: Date.now(),
+      penaltyFlash: penalty.darkness ? Date.now() : 0,
+      notice: {
+        text: penalty.timeMs ? `DEAD END · +${penalty.timeMs / 1000}s` : "DEAD END",
+        at: Date.now(),
+        tone: "warn",
+      },
+    });
+  },
+
   /** real exit reached: gate opens, short cinematic beat, then the results */
   escape(gateId: number) {
     if (state.phase !== "playing") return;
@@ -106,10 +212,27 @@ export const actions = {
     set({ phase: "escaping", finalMs, segmentStart: 0, openGateId: gateId, notice: null });
     window.setTimeout(() => {
       if (getState().phase !== "escaping") return;
-      const isNewBest = saveActions.completeLevel(state.level, finalMs);
+      const build = buildLevel(state.level);
+      const result = rateRun({
+        level: state.level,
+        timeMs: finalMs,
+        cluesFound: state.discoveredClueIds.length,
+        cluesTotal: build.clues.length,
+        hintsUsed: state.hintsUsed,
+        wrongGates: state.wrongGates,
+        secretsFound: state.secretsFound.length,
+      });
+      const isNewBest = saveActions.completeLevel(state.level, {
+        timeMs: finalMs,
+        stars: result.stars,
+        score: result.score,
+        xp: result.xp + state.xp,
+        clueIds: state.discoveredClueIds,
+      });
       set({
         phase: "complete",
         isNewBest,
+        result,
         bestMs: Math.min(finalMs, state.bestMs ?? finalMs),
       });
     }, 1700);
@@ -127,11 +250,12 @@ export const actions = {
       accumulatedMs: 0,
       notice: null,
       openGateId: null,
+      cluePanelOpen: false,
     });
   },
-  notify(text: string) {
+  notify(text: string, tone: "info" | "warn" | "reward" = "info") {
     if (state.notice && state.notice.text === text) return;
-    set({ notice: { text, at: Date.now() } });
+    set({ notice: { text, at: Date.now(), tone } });
   },
   clearNotice() {
     if (state.notice) set({ notice: null });
