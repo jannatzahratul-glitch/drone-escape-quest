@@ -73,7 +73,7 @@ export function GameScene({
       <color attach="background" args={["#08080b"]} />
       <fog
         attach="fog"
-        args={["#0c0b10", span * (0.85 * quality.fogTightness), span * 2.3]}
+        args={["#0c0b10", span * (cinematic ? 1.5 : 0.85 * quality.fogTightness), span * (cinematic ? 3.2 : 2.3)]}
       />
 
       <ambientLight intensity={cinematic ? 1.5 : 0.95} color="#8fa2c4" />
@@ -141,7 +141,7 @@ export function GameScene({
         motion={cinematic ? undefined : motion.current}
         cinematic={cinematic}
         focus={openGateId !== null}
-        zoom={cinematic ? 1.08 : 1}
+        zoom={cinematic ? 0.85 : 1}
       />
     </Canvas>
   );
