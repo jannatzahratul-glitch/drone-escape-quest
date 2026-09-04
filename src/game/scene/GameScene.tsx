@@ -5,6 +5,7 @@ import { Suspense, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { CELL_SIZE, cellToWorld, generateMaze, type Gate } from "../maze/generator";
 import { getLevelConfig } from "../levels/levels";
+import { setJoystick } from "../input/input";
 import { DroneCamera } from "./DroneCamera";
 
 const MAZE_CENTER = new THREE.Vector3(0, 0, 0);
@@ -44,6 +45,15 @@ export function GameScene({
   );
 
   const span = Math.max(maze.width, maze.height) * CELL_SIZE;
+
+  // Dev-only bridge used by automated gameplay tests.
+  if (import.meta.env.DEV && typeof window !== "undefined") {
+    (window as unknown as Record<string, unknown>)["__mazeDebug"] = {
+      maze,
+      tracker: tracker.current,
+      setJoystick,
+    };
+  }
 
   return (
     <Canvas
