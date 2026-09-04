@@ -33,11 +33,11 @@ export function MazeMesh({ maze }: { maze: Maze }) {
     mesh.computeBoundingSphere();
   }, [positions]);
 
-  const floorW = maze.width * CELL_SIZE + CELL_SIZE * 4;
-  const floorH = maze.height * CELL_SIZE + CELL_SIZE * 4;
+  const floorW = maze.width * CELL_SIZE + CELL_SIZE * 24;
+  const floorH = maze.height * CELL_SIZE + CELL_SIZE * 24;
 
   useLayoutEffect(() => {
-    floorTex.repeat.set(maze.width / 2, maze.height / 2);
+    floorTex.repeat.set(floorW / (CELL_SIZE * 2), floorH / (CELL_SIZE * 2));
     wallTex.repeat.set(1, 1);
   }, [floorTex, wallTex, maze]);
 
