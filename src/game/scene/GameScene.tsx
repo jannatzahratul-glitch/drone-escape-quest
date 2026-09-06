@@ -1,6 +1,5 @@
 import type {} from "@react-three/fiber";
 import { Canvas } from "@react-three/fiber";
-import { Environment, Lightformer } from "@react-three/drei";
 import { Suspense, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { CELL_SIZE, cellToWorld, type Gate } from "../maze/generator";
