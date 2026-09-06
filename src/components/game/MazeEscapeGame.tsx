@@ -16,6 +16,7 @@ import { SceneBoundary } from "./SceneBoundary";
 import { LevelMapScreen } from "./map/LevelMap";
 import { SettingsScreen } from "./SettingsScreen";
 import { DailyRewardScreen } from "./economy/DailyRewardScreen";
+import { PrivacyScreen } from "./PrivacyScreen";
 
 /** Heavy Three.js gameplay chunk — only fetched when a level actually starts. */
 const GameScene = lazy(() =>
@@ -143,6 +144,7 @@ export function MazeEscapeGame() {
       {phase === "levels" && <LevelMapScreen />}
       {phase === "settings" && <SettingsScreen />}
       {phase === "daily" && <DailyRewardScreen />}
+      {phase === "privacy" && <PrivacyScreen />}
       {phase === "paused" && <PauseScreen />}
       {phase === "escaping" && <EscapingOverlay />}
       {phase === "complete" && <LevelCompleteScreen />}
