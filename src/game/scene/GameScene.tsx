@@ -6,7 +6,6 @@ import * as THREE from "three";
 import { CELL_SIZE, cellToWorld, type Gate } from "../maze/generator";
 import { buildLevel } from "../levels/levelBuilder";
 import { Clues } from "./Clues";
-import { useGame } from "../state/gameStore";
 import { getLevelConfig } from "../levels/levels";
 import { setJoystick } from "../input/input";
 import { getQuality, useSettings, QUALITY } from "../settings/SettingsManager";
@@ -47,8 +46,6 @@ export function GameScene({
   const build = useMemo(() => buildLevel(level), [level]);
   const maze = build.maze;
   const fogStrength = getLevelConfig(level).difficulty.fogStrength;
-  const discovered = useGame((s) => s.discoveredClueIds);
-  const secrets = useGame((s) => s.secretsFound);
   const tracker = useRef(
     new THREE.Vector3(
       ...(() => {
@@ -76,7 +73,17 @@ export function GameScene({
     <Canvas
       shadows={quality.shadows}
       dpr={quality.dpr}
-      gl={{ antialias: quality.antialias, powerPreference: "high-performance" }}
+      gl={{
+        antialias: quality.antialias,
+        powerPreference: "high-performance",
+        stencil: false,
+        depth: true,
+        alpha: false,
+      }}
+      onCreated={({ gl }) => {
+        gl.toneMapping = THREE.ACESFilmicToneMapping;
+        gl.toneMappingExposure = 1.35;
+      }}
       camera={{ fov: 45, near: 0.5, far: span * 4 }}
       style={{ touchAction: "none" }}
     >
@@ -84,19 +91,19 @@ export function GameScene({
       <fog
         attach="fog"
         args={[
-          "#0c0b10",
-          span * (cinematic ? 1.5 : (0.85 - fogStrength * 0.45) * quality.fogTightness),
-          span * (cinematic ? 3.2 : 2.3 - fogStrength * 1.1),
+          "#191722",
+          span * (cinematic ? 1.7 : (1.15 - fogStrength * 0.3) * quality.fogTightness),
+          span * (cinematic ? 3.4 : 3 - fogStrength * 0.7),
         ]}
       />
 
-      <ambientLight intensity={cinematic ? 1.5 : 0.95} color="#8fa2c4" />
-      <hemisphereLight args={["#59688a", "#2a2119", cinematic ? 1.4 : 0.95]} />
+      <ambientLight intensity={cinematic ? 1.8 : 1.55} color="#b3c2dd" />
+      <hemisphereLight args={["#8394b8", "#4a3f31", cinematic ? 1.7 : 1.5]} />
       {/* cool moonlight key so the stone reads dark but never unreadable */}
       <directionalLight
         position={[span * 0.4, span * 0.95, span * 0.35]}
-        intensity={2.6}
-        color="#d8e2ff"
+        intensity={2.9}
+        color="#e4ebff"
         castShadow={quality.shadows}
         shadow-mapSize-width={quality.shadowMapSize}
         shadow-mapSize-height={quality.shadowMapSize}
@@ -110,8 +117,8 @@ export function GameScene({
       {/* warm bounce from the torches below */}
       <directionalLight
         position={[-span * 0.3, span * 0.4, -span * 0.4]}
-        intensity={0.8}
-        color="#ffb066"
+        intensity={1.15}
+        color="#ffc189"
       />
 
       <Suspense fallback={null}>
@@ -143,8 +150,6 @@ export function GameScene({
             hidden={build.hidden}
             tracker={tracker.current}
             quality={quality}
-            discovered={discovered}
-            secrets={secrets}
             active={!paused}
           />
         )}
