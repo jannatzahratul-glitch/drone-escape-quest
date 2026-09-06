@@ -10,6 +10,16 @@ import type { QualityProfile } from "../settings/SettingsManager";
  * dead ends. Light count is budgeted by the graphics setting since lights are
  * the most expensive thing in the scene on mobile GPUs.
  */
+// shared across every torch / prop instance — never re-allocated at runtime
+const FLAME_GEO = new THREE.SphereGeometry(0.14, 8, 6);
+const STICK_GEO = new THREE.CylinderGeometry(0.04, 0.05, 0.4, 6);
+const RUBBLE_GEO = new THREE.DodecahedronGeometry(0.16, 0);
+const RUBBLE_SMALL_GEO = new THREE.DodecahedronGeometry(0.09, 0);
+const FLAME_MAT = new THREE.MeshBasicMaterial({ color: "#ffd08a" });
+const STICK_MAT = new THREE.MeshStandardMaterial({ color: "#4a3826", roughness: 0.95 });
+const RUBBLE_MAT = new THREE.MeshStandardMaterial({ color: "#6d6558", roughness: 0.95 });
+const RUBBLE_MAT_2 = new THREE.MeshStandardMaterial({ color: "#5d564a", roughness: 0.95 });
+
 export function Torches({ maze, quality }: { maze: Maze; quality: QualityProfile }) {
   const lights = useRef<Array<THREE.PointLight | null>>([]);
   const flames = useRef<Array<THREE.Mesh | null>>([]);
@@ -44,7 +54,7 @@ export function Torches({ maze, quality }: { maze: Maze; quality: QualityProfile
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     lights.current.forEach((l, i) => {
-      if (l) l.intensity = 8 + Math.sin(t * 7 + i * 1.7) * 2 + Math.sin(t * 13 + i) * 1;
+      if (l) l.intensity = 10 + Math.sin(t * 7 + i * 1.7) * 2 + Math.sin(t * 13 + i) * 1;
     });
     flames.current.forEach((f, i) => {
       if (f) {
@@ -62,21 +72,17 @@ export function Torches({ maze, quality }: { maze: Maze; quality: QualityProfile
             ref={(el) => {
               flames.current[i] = el;
             }}
-          >
-            <sphereGeometry args={[0.14, 8, 6]} />
-            <meshBasicMaterial color="#ffc06a" />
-          </mesh>
-          <mesh position={[0, -0.28, 0]}>
-            <cylinderGeometry args={[0.04, 0.05, 0.4, 6]} />
-            <meshStandardMaterial color="#3a2b1d" roughness={0.95} />
-          </mesh>
+            geometry={FLAME_GEO}
+            material={FLAME_MAT}
+          />
+          <mesh position={[0, -0.28, 0]} geometry={STICK_GEO} material={STICK_MAT} />
           <pointLight
             ref={(el) => {
               lights.current[i] = el;
             }}
-            color="#ff9840"
+            color="#ffab5c"
             distance={CELL_SIZE * 6}
-            intensity={9}
+            intensity={11}
             castShadow={false}
           />
         </group>
@@ -85,14 +91,20 @@ export function Torches({ maze, quality }: { maze: Maze; quality: QualityProfile
       {/* small rubble props to break up empty dead ends */}
       {props.map((p, i) => (
         <group key={`p${i}`} position={p.pos} rotation-y={p.n * Math.PI}>
-          <mesh position={[0, 0.11, 0]} castShadow={quality.shadows} receiveShadow>
-            <dodecahedronGeometry args={[0.16 + p.n * 0.1, 0]} />
-            <meshStandardMaterial color="#5a5348" roughness={0.95} />
-          </mesh>
-          <mesh position={[0.3, 0.06, 0.15]} castShadow={quality.shadows}>
-            <dodecahedronGeometry args={[0.09, 0]} />
-            <meshStandardMaterial color="#4c463c" roughness={0.95} />
-          </mesh>
+          <mesh
+            position={[0, 0.11, 0]}
+            scale={1 + p.n * 0.6}
+            geometry={RUBBLE_GEO}
+            material={RUBBLE_MAT}
+            castShadow={quality.shadows}
+            receiveShadow
+          />
+          <mesh
+            position={[0.3, 0.06, 0.15]}
+            geometry={RUBBLE_SMALL_GEO}
+            material={RUBBLE_MAT_2}
+            castShadow={quality.shadows}
+          />
         </group>
       ))}
     </group>
