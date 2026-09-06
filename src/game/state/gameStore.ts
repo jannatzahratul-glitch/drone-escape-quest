@@ -27,7 +27,8 @@ export type GamePhase =
   | "paused"
   | "escaping"
   | "complete"
-  | "daily";
+  | "daily"
+  | "privacy";
 
 export interface GameState {
   phase: GamePhase;
@@ -341,6 +342,12 @@ export const actions = {
   },
   clearLevelUp() {
     if (state.levelUp !== null) set({ levelUp: null });
+  },
+  showPrivacy() {
+    set({ phase: "privacy", segmentStart: 0, notice: null, confirmRestart: false });
+  },
+  closePrivacy() {
+    actions.mainMenu();
   },
   showDaily() {
     set({ phase: "daily", segmentStart: 0, notice: null, confirmRestart: false });
