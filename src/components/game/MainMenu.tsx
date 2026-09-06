@@ -82,6 +82,13 @@ export function MainMenu() {
         <p className="mt-6 text-xs text-muted-foreground">
           Every gate looks the same. Only one opens.
         </p>
+
+        <button
+          onClick={go(actions.showPrivacy)}
+          className="mt-4 text-[0.55rem] tracking-[0.28em] text-muted-foreground underline underline-offset-4 hover:text-foreground"
+        >
+          PRIVACY POLICY
+        </button>
       </Panel>
     </Screen>
   );
