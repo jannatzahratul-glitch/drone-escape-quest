@@ -65,6 +65,20 @@ function sanitize(raw: Partial<Settings>): Settings {
   };
 }
 
+/**
+ * Best-effort device tier. Phones default to MEDIUM, weak phones to LOW,
+ * desktops / high-core devices to HIGH.
+ */
+export function detectTier(): GraphicsQuality {
+  if (typeof navigator === "undefined") return "medium";
+  const cores = navigator.hardwareConcurrency ?? 4;
+  const mem = (navigator as unknown as { deviceMemory?: number }).deviceMemory ?? 4;
+  const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  if (cores <= 4 || mem <= 3) return "low";
+  if (mobile) return cores >= 8 && mem >= 6 ? "high" : "medium";
+  return cores >= 8 ? "high" : "medium";
+}
+
 let settings: Settings = DEFAULTS;
 let loaded = false;
 const listeners = new Set<() => void>();
@@ -79,10 +93,9 @@ export function loadSettings() {
   } catch {
     settings = DEFAULTS;
   }
-  // auto-downgrade on low-core devices unless the player already chose
-  if (!stored && (navigator.hardwareConcurrency ?? 4) <= 4) {
-    settings = { ...settings, graphics: "low" };
-  }
+  // auto-pick a device tier the first time only — the player's own choice
+  // is never overridden on later launches
+  if (!stored) settings = { ...settings, graphics: detectTier() };
   listeners.forEach((l) => l());
   return settings;
 }
@@ -123,34 +136,37 @@ export interface QualityProfile {
 }
 
 export const QUALITY: Record<GraphicsQuality, QualityProfile> = {
+  // LOW — no shadows, native resolution capped at 1x, minimal effects.
   low: {
     shadows: false,
     shadowMapSize: 512,
-    dpr: [1, 1],
+    dpr: [0.75, 1],
     textureSize: 128,
     torchCount: 3,
     particles: 0,
-    fogTightness: 1,
+    fogTightness: 1.15,
     antialias: false,
   },
+  // MEDIUM — the mobile default: cheap shadows, moderate resolution.
   medium: {
     shadows: true,
-    shadowMapSize: 1024,
-    dpr: [1, 1.6],
+    shadowMapSize: 768,
+    dpr: [1, 1.4],
     textureSize: 256,
-    torchCount: 6,
-    particles: 14,
-    fogTightness: 1.1,
-    antialias: true,
+    torchCount: 5,
+    particles: 10,
+    fogTightness: 1.2,
+    antialias: false,
   },
+  // HIGH — desktops and flagship phones.
   high: {
     shadows: true,
-    shadowMapSize: 2048,
-    dpr: [1, 2],
+    shadowMapSize: 1536,
+    dpr: [1, 1.75],
     textureSize: 512,
-    torchCount: 10,
-    particles: 26,
-    fogTightness: 1.2,
+    torchCount: 8,
+    particles: 20,
+    fogTightness: 1.3,
     antialias: true,
   },
 };
