@@ -37,16 +37,14 @@ let progress: Progress = EMPTY;
 let loaded = false;
 const listeners = new Set<() => void>();
 
+import { queuePersist } from "./persistQueue";
+
 function emit() {
   listeners.forEach((l) => l());
 }
 
 function persist() {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(progress));
-  } catch {
-    /* storage unavailable — progress stays in memory for this session */
-  }
+  queuePersist(KEY, () => localStorage.setItem(KEY, JSON.stringify(progress)));
 }
 
 const record = (v: unknown): Record<number, never> =>
