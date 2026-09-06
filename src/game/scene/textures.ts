@@ -255,3 +255,52 @@ export function createSymbolTexture(glyph: string, size = 128) {
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
+
+/* ------------------------------------------------------------------ *
+ * Shared texture cache
+ *
+ * Canvas texture generation (and the first GPU upload) is the single most
+ * expensive thing that can happen mid-gameplay. Every texture is therefore
+ * created once per (kind,size) and reused by every object that needs it —
+ * clue stones, gates and walls all share the same GPU resources.
+ * ------------------------------------------------------------------ */
+type WallSet = ReturnType<typeof createWallTextures>;
+const wallCache = new Map<number, WallSet>();
+const floorCache = new Map<number, WallSet>();
+const doorCache = new Map<number, ReturnType<typeof createDoorTextures>>();
+const symbolCache = new Map<string, THREE.Texture>();
+
+export function getWallTextures(size = 256) {
+  let t = wallCache.get(size);
+  if (!t) wallCache.set(size, (t = createWallTextures(size)));
+  return t;
+}
+export function getFloorTextures(size = 256) {
+  let t = floorCache.get(size);
+  if (!t) floorCache.set(size, (t = createFloorTextures(size)));
+  return t;
+}
+export function getDoorTextures(size = 256) {
+  let t = doorCache.get(size);
+  if (!t) doorCache.set(size, (t = createDoorTextures(size)));
+  return t;
+}
+export function getSymbolTexture(glyph: string, size = 128) {
+  const key = `${glyph}@${size}`;
+  let t = symbolCache.get(key);
+  if (!t) symbolCache.set(key, (t = createSymbolTexture(glyph, size)));
+  return t;
+}
+
+/**
+ * Warm every texture a level needs *before* gameplay starts, so walking up to
+ * a clue stone never triggers a canvas draw or a texture upload mid-frame.
+ */
+export function preloadSceneTextures(textureSize: number, glyphs: string[]) {
+  if (typeof document === "undefined") return;
+  getWallTextures(textureSize);
+  getFloorTextures(textureSize);
+  getDoorTextures(textureSize);
+  const s = Math.min(256, textureSize);
+  for (const g of glyphs) getSymbolTexture(g, s);
+}

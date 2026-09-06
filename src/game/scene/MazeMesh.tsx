@@ -3,7 +3,7 @@ import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { CELL_SIZE, WALL_HEIGHT, cellToWorld, type Maze } from "../maze/generator";
 import type { QualityProfile } from "../settings/SettingsManager";
-import { createFloorTextures, createWallTextures } from "./textures";
+import { getFloorTextures, getWallTextures } from "./textures";
 
 /**
  * All maze walls drawn with a single InstancedMesh (one draw call).
@@ -13,8 +13,8 @@ import { createFloorTextures, createWallTextures } from "./textures";
 export function MazeMesh({ maze, quality }: { maze: Maze; quality: QualityProfile }) {
   const wallRef = useRef<THREE.InstancedMesh>(null);
   const capRef = useRef<THREE.InstancedMesh>(null);
-  const wall = useMemo(() => createWallTextures(quality.textureSize), [quality.textureSize]);
-  const floor = useMemo(() => createFloorTextures(quality.textureSize), [quality.textureSize]);
+  const wall = useMemo(() => getWallTextures(quality.textureSize), [quality.textureSize]);
+  const floor = useMemo(() => getFloorTextures(quality.textureSize), [quality.textureSize]);
 
   const positions = useMemo(() => {
     const out: Array<[number, number, number]> = [];
@@ -44,7 +44,7 @@ export function MazeMesh({ maze, quality }: { maze: Maze; quality: QualityProfil
       dummy.rotation.y = (n - 0.5) * 0.05;
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
-      colour.setHSL(0.09, 0.07, 0.44 + (n - 0.5) * 0.16);
+      colour.setHSL(0.09, 0.07, 0.62 + (n - 0.5) * 0.16);
       mesh.setColorAt(i, colour);
 
       if (caps) {
@@ -84,7 +84,7 @@ export function MazeMesh({ maze, quality }: { maze: Maze; quality: QualityProfil
           bumpScale={0.6}
           roughness={0.96}
           metalness={0.02}
-          color="#8a8175"
+          color="#a79c8c"
         />
       </mesh>
 
@@ -107,7 +107,7 @@ export function MazeMesh({ maze, quality }: { maze: Maze; quality: QualityProfil
       {/* darker coping stone along every wall top — reads as real thickness */}
       <instancedMesh ref={capRef} args={[undefined, undefined, positions.length]} receiveShadow>
         <boxGeometry args={[CELL_SIZE + 0.12, 0.12, CELL_SIZE + 0.12]} />
-        <meshStandardMaterial color="#4a453d" roughness={0.85} />
+        <meshStandardMaterial color="#5f594e" roughness={0.85} />
       </instancedMesh>
     </group>
   );

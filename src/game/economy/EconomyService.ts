@@ -42,17 +42,15 @@ const EMPTY: EconomyState = {
   daily: { day: 1, lastClaim: null },
 };
 
+import { queuePersist } from "../save/persistQueue";
+
 let state: EconomyState = EMPTY;
 let loaded = false;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 
 function persist() {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(state));
-  } catch {
-    /* storage unavailable — economy stays in memory for this session */
-  }
+  queuePersist(KEY, () => localStorage.setItem(KEY, JSON.stringify(state)));
 }
 
 function set(patch: Partial<EconomyState>) {

@@ -25,6 +25,9 @@ interface DroneCameraProps {
   focus?: boolean;
 }
 
+const DESIRED = new THREE.Vector3();
+const LOOK_TARGET = new THREE.Vector3();
+
 export function DroneCamera({
   maze,
   target,
@@ -86,7 +89,7 @@ export function DroneCamera({
     const hoverY = Math.sin(t * 0.5) * 0.5;
     const hoverZ = Math.cos(t * 0.28) * 0.35;
 
-    const desired = new THREE.Vector3(
+    const desired = DESIRED.set(
       fx + Math.sin(angle) * back + hoverX,
       height + hoverY,
       fz + Math.cos(angle) * back + hoverZ,
@@ -99,7 +102,7 @@ export function DroneCamera({
       initialised.current = true;
     } else {
       camera.position.lerp(desired, 1 - Math.exp(-3.4 * delta));
-      look.current.lerp(new THREE.Vector3(fx, 0, fz), 1 - Math.exp(-5 * delta));
+      look.current.lerp(LOOK_TARGET.set(fx, 0, fz), 1 - Math.exp(-5 * delta));
     }
 
     // never dip near the walls

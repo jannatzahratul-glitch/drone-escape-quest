@@ -24,6 +24,7 @@ import { actions } from "../state/gameStore";
 const SPEED = 5.2;
 const ACCEL = 14;
 const RADIUS = 0.42;
+const TARGET_VEC = new THREE.Vector2();
 
 function isFree(maze: Maze, wx: number, wz: number) {
   const corners: Array<[number, number]> = [
@@ -94,7 +95,7 @@ export function Player({
     }
 
     const input = getMoveVector();
-    const target = new THREE.Vector2(input.x * SPEED, input.y * SPEED);
+    const target = TARGET_VEC.set(input.x * SPEED, input.y * SPEED);
     velocity.current.lerp(target, 1 - Math.exp(-ACCEL * delta));
 
     const vx = velocity.current.x * delta;

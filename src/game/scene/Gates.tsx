@@ -4,7 +4,7 @@ import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { CELL_SIZE, WALL_HEIGHT, cellToWorld, type Gate, type Maze } from "../maze/generator";
 import type { QualityProfile } from "../settings/SettingsManager";
-import { createDoorTextures, createSymbolTexture } from "./textures";
+import { getDoorTextures, getSymbolTexture } from "./textures";
 import { SYMBOLS, type GateInfo } from "../clues/clueSystem";
 
 /**
@@ -185,11 +185,11 @@ export function Gates({
   quality: QualityProfile;
   openGateId: number | null;
 }) {
-  const door = useMemo(() => createDoorTextures(quality.textureSize), [quality.textureSize]);
+  const door = useMemo(() => getDoorTextures(quality.textureSize), [quality.textureSize]);
   const symbolMaps = useMemo(() => {
     const size = Math.min(256, quality.textureSize);
     const out: Record<string, THREE.Texture> = {};
-    for (const g of gates) out[g.symbol] ??= createSymbolTexture(SYMBOLS[g.symbol].glyph, size);
+    for (const g of gates) out[g.symbol] ??= getSymbolTexture(SYMBOLS[g.symbol].glyph, size);
     return out;
   }, [gates, quality.textureSize]);
   return (
