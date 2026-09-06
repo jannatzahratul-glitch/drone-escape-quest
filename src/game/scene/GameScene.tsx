@@ -123,24 +123,18 @@ export function GameScene({
         color="#ffc189"
       />
 
+      {/* cheap image-based-lighting stand-ins: two large soft fills replace the
+          HDR environment probe, which pulled a ~1.9 MB decoder into the bundle
+          and re-rendered a cubemap whenever the scene re-rendered */}
+      <directionalLight
+        position={[-span * 0.5, span * 0.3, span * 0.5]}
+        intensity={0.55}
+        color="#8fa6d8"
+      />
+      <directionalLight position={[0, span * 0.2, -span * 0.6]} intensity={0.4} color="#ffb27a" />
+
       <Suspense fallback={null}>
-        <Environment resolution={64}>
-          <Lightformer intensity={1.1} position={[0, 6, 0]} scale={[14, 14, 1]} color="#54628a" />
-          <Lightformer
-            intensity={0.7}
-            color="#ff9a55"
-            position={[-6, 2, 2]}
-            rotation-y={Math.PI / 2}
-            scale={[22, 2, 1]}
-          />
-          <Lightformer
-            intensity={0.5}
-            color="#6d86c4"
-            position={[6, 3, -3]}
-            rotation-y={-Math.PI / 2}
-            scale={[22, 3, 1]}
-          />
-        </Environment>
+
 
         <MazeMesh maze={maze} quality={quality} />
         <Gates maze={maze} gates={build.gates} quality={quality} openGateId={openGateId} />
