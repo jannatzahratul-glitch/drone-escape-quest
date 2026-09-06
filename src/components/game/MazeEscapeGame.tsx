@@ -3,7 +3,7 @@ import { installKeyboard, resetInput } from "@/game/input/input";
 import { actions, useGame } from "@/game/state/gameStore";
 import { loadProgress, getProgress } from "@/game/save/SaveManager";
 import { loadEconomy } from "@/game/economy/EconomyService";
-import { loadSettings, getSettings } from "@/game/settings/SettingsManager";
+import { loadSettings, getSettings, getQuality } from "@/game/settings/SettingsManager";
 import { AudioManager, playCue } from "@/game/audio/AudioManager";
 import { haptics } from "@/game/haptics/HapticManager";
 import type { Gate } from "@/game/maze/generator";
@@ -39,6 +39,38 @@ export function MazeEscapeGame() {
     loadSettings();
   }, []);
   useEffect(() => installKeyboard(), []);
+
+  // Warm the heavy 3D chunk and the stone/rune textures in idle time once the
+  // menu is on screen, so entering a level (and walking up to a clue stone)
+  // never pays a decode / upload cost mid-frame.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let cancelled = false;
+    const warm = () => {
+      void import("@/game/scene/GameScene");
+      void Promise.all([import("@/game/scene/textures"), import("@/game/clues/clueSystem")]).then(
+        ([tex, clue]) => {
+          if (cancelled) return;
+          tex.preloadSceneTextures(
+            getQuality().textureSize,
+            Object.values(clue.SYMBOLS).map((s) => s.glyph),
+          );
+        },
+      );
+    };
+    const w = window as unknown as {
+      requestIdleCallback?: (cb: () => void, o?: object) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    const id = w.requestIdleCallback
+      ? w.requestIdleCallback(warm, { timeout: 2500 })
+      : (setTimeout(warm, 1000) as unknown as number);
+    return () => {
+      cancelled = true;
+      if (w.cancelIdleCallback) w.cancelIdleCallback(id);
+      else clearTimeout(id);
+    };
+  }, []);
   useEffect(() => {
     resetInput();
   }, [runKey, phase]);

@@ -85,6 +85,8 @@ export function GameScene({
         gl.toneMappingExposure = 1.35;
       }}
       camera={{ fov: 45, near: 0.5, far: span * 4 }}
+      /* a paused / menu-covered scene renders once instead of every frame */
+      frameloop={paused && !cinematic ? "demand" : "always"}
       style={{ touchAction: "none" }}
     >
       <color attach="background" args={["#08080b"]} />
