@@ -35,7 +35,6 @@
         </provider>
     </application>
 
-    <!-- Permissions -->
+    <!-- No permissions required: the game is fully offline. -->
 
-    <uses-permission android:name="android.permission.INTERNET" />
 </manifest>
