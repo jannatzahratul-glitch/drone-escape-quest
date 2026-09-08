@@ -8,7 +8,7 @@ import {
 const TITLE = "Privacy Policy — Maze Escape";
 const DESCRIPTION =
   "Maze Escape collects no personal data. Progress is stored only on your device. No ads, no accounts, no trackers.";
-const URL = "https://drone-escape-quest.lovable.app/privacy";
+const URL = "https://stonelabyrinth.online/privacy";
 
 export const Route = createFileRoute("/privacy")({
   head: () => ({
